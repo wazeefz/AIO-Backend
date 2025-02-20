@@ -29,4 +29,4 @@ app.include_router(gemini.router)
 
 @app.get("/")
 def home():
-    return {"message": "Welcome to AIO Backend! Please procced to http://127.0.0.1:8000/docs to test the app."}
+    return {"message": "Welcome to AIO Backend! Please proceed to http://127.0.0.1:8000/docs to test the app."}
