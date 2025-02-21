@@ -5,7 +5,7 @@ from typing import List
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
 
-from . import database, models
+from . import database, models2
 
 app = FastAPI()
 
@@ -129,7 +129,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 @app.post("/signup/", response_model=UserResponse)
 def signup(user: UserCreate, db: Session = Depends(database.get_db)):
     # Check if the email is already registered
-    db_user = db.query(models.User).filter(models.User.email == user.email).first()
+    db_user = db.query(models2.User).filter(models2.User.email == user.email).first()
     if db_user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
 
@@ -137,7 +137,7 @@ def signup(user: UserCreate, db: Session = Depends(database.get_db)):
     hashed_password = hash_password(user.password)
 
     # Create a new user
-    new_user = models.User(
+    new_user = models2.User(
         name=user.name,
         email=user.email,
         password=hashed_password,  # Store the hashed password
@@ -158,7 +158,7 @@ def signup(user: UserCreate, db: Session = Depends(database.get_db)):
 @app.post("/login/")
 def login(user: UserLogin, db: Session = Depends(database.get_db)):
     # Find the user by email
-    db_user = db.query(models.User).filter(models.User.email == user.email).first()
+    db_user = db.query(models2.User).filter(models2.User.email == user.email).first()
     if not db_user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
@@ -176,12 +176,12 @@ def get_departments(
     limit: int = 100,
     db: Session = Depends(database.get_db)
 ):
-    departments = db.query(models.Department).offset(skip).limit(limit).all()
+    departments = db.query(models2.Department).offset(skip).limit(limit).all()
     return departments
 
 @app.get("/departments/{department_id}", response_model=DepartmentSchema)
 def get_department(department_id: int, db: Session = Depends(database.get_db)):
-    department = db.query(models.Department).filter(models.Department.department_id == department_id).first()
+    department = db.query(models2.Department).filter(models2.Department.department_id == department_id).first()
     if department is None:
         raise HTTPException(status_code=404, detail="Department not found")
     return department
@@ -192,12 +192,12 @@ def get_skills(
     limit: int = 100,
     db: Session = Depends(database.get_db)
 ):
-    skills = db.query(models.Skill).offset(skip).limit(limit).all()
+    skills = db.query(models2.Skill).offset(skip).limit(limit).all()
     return skills
 
 @app.get("/skills/{skill_id}", response_model=SkillSchema)
 def get_skill(skill_id: int, db: Session = Depends(database.get_db)):
-    skill = db.query(models.Skill).filter(models.Skill.skill_id == skill_id).first()
+    skill = db.query(models2.Skill).filter(models2.Skill.skill_id == skill_id).first()
     if skill is None:
         raise HTTPException(status_code=404, detail="Skill not found")
     return skill
@@ -208,12 +208,12 @@ def get_talents(
     limit: int = 100,
     db: Session = Depends(database.get_db)
 ):
-    talents = db.query(models.Talent).offset(skip).limit(limit).all()
+    talents = db.query(models2.Talent).offset(skip).limit(limit).all()
     return talents
 
 @app.get("/talents/{talent_id}", response_model=TalentSchema)
 def get_talent(talent_id: int, db: Session = Depends(database.get_db)):
-    talent = db.query(models.Talent).filter(models.Talent.talent_id == talent_id).first()
+    talent = db.query(models2.Talent).filter(models2.Talent.talent_id == talent_id).first()
     if talent is None:
         raise HTTPException(status_code=404, detail="Talent not found")
     return talent
@@ -224,12 +224,12 @@ def get_projects(
     limit: int = 100,
     db: Session = Depends(database.get_db)
 ):
-    projects = db.query(models.Project).offset(skip).limit(limit).all()
+    projects = db.query(models2.Project).offset(skip).limit(limit).all()
     return projects
 
 @app.get("/projects/{project_id}", response_model=ProjectSchema)
 def get_project(project_id: int, db: Session = Depends(database.get_db)):
-    project = db.query(models.Project).filter(models.Project.project_id == project_id).first()
+    project = db.query(models2.Project).filter(models2.Project.project_id == project_id).first()
     if project is None:
         raise HTTPException(status_code=404, detail="Project not found")
     return project
@@ -240,12 +240,12 @@ def get_users(
     limit: int = 100,
     db: Session = Depends(database.get_db)
 ):
-    users = db.query(models.User).offset(skip).limit(limit).all()
+    users = db.query(models2.User).offset(skip).limit(limit).all()
     return users
 
 @app.get("/users/{user_id}", response_model=UserSchema)
 def get_user(user_id: int, db: Session = Depends(database.get_db)):
-    user = db.query(models.User).filter(models.User.user_id == user_id).first()
+    user = db.query(models2.User).filter(models2.User.user_id == user_id).first()
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return user
