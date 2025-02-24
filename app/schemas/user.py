@@ -26,3 +26,11 @@ class UserResponse(UserBase):
 
     class Config:
         from_attributes = True  # Ensures compatibility with ORM models
+
+# New Schema for Signup (Same as UserCreate)
+class UserSignup(UserBase):
+    pass  # No changes needed, inherits all fields
+
+# New Schema for Login (Only email required)
+class UserLogin(BaseModel):
+    email: str  # Only email is required for login
