@@ -55,19 +55,36 @@ async def summarize_resume(file: UploadFile = File(...)):
         text = read_pdf_file(BytesIO(contents))
 
         prompt = f"""
-        You are a meticulous hiring manager tasked with extracting key information from a resume. Convert the unstructured data into structured JSON format.
+        You are a meticulous hiring manager tasked with extracting key information from a resume. Your job is to convert the unstructured data into structured JSON format.
 
-        Extract:
-        - name
-        - address
-        - contact_details (phone, email, social links)
-        - skills (list)
-        - education (institution, level, degree, field, cgpa, start_year, graduation_year)
-        - professional_summary
-        
+        Please extract the information from the resume provided below, delimited by triple backticks, and present it as a JSON object with the following fields. If any information is missing, include the key with a `null` value:
+
+        Fields to extract:
+
+        1. name: Full name of the candidate.
+
+        2. address: The address provided by the candidate (if available).
+
+        3. contact_details: Includes: phone: Phone number. Example: `+60123456789`
+            - email: Email address. Example: `work@yahoo.com`
+            - socials: A dictionary of the candidates social media profiles, such as LinkedIn and GitHub. 
+
+        4. skills: List of technical, professional, and language skills. Include co-curricular activity skills (if explicitly mentioned as skills). Do not include hobbies or interests unless they are marked as skills.
+
+        5. education: List of educational qualifications with the following details:
+            - institution: Name of the institution.
+            - level: Level of education (e.g., Bachelor's, Master's, PhD).
+            - degree: Specific degree title (e.g., Bachelor of Information Systems (Honours) (Data Analytics)).
+            - field: Extract the field from the degree. Example: "Information Systems" for "Bachelor of Information Systems".
+            - cgpa: Cumulative Grade Point Average, if provided.
+            - start_year: Start year of the program.
+            - graduation_year: Graduation or expected graduation year.
+
+        6. professional_summary: Write a concise and well-crafted summary of the candidate's experience, skills, and qualifications based on the extracted information.
+
         ```{text}```
         
-        Ensure the JSON is well-structured.
+        Please ensure the JSON output is correctly formatted, ignore newline chracters (such as '\n'), follows the field requirements strictly, and provides accurate interpretations of the data.
         """
 
         prompt_template = PromptTemplate(template=prompt, input_variables=["text"])
