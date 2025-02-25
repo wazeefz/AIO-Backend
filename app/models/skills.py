@@ -11,3 +11,4 @@ class Skill(Base):
 
     # Relationships
     talent_skills = relationship("TalentSkill", back_populates="skill", cascade="all, delete")
+    experienceskills = relationship("ExperienceSkills", back_populates="skill")

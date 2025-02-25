@@ -14,3 +14,5 @@ class User(Base):
     # Relationships
     department = relationship("Department", back_populates="users")
     projects = relationship("Project", back_populates="user")
+    project_teams = relationship("TeamProjects", back_populates="user")
+    chats = relationship("Chat", back_populates="user")

@@ -19,3 +19,4 @@ class ProfessionalExperience(Base):
 
     # Relationships
     talent = relationship("Talent", back_populates="professional_experience")
+    skills = relationship("ExperienceSkills", back_populates="experience")
