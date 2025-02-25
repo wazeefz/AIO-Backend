@@ -8,9 +8,10 @@ class Chat(Base):
 
     conversation_id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.user_id"))
+    started_at = Column(DateTime, default=datetime.utcnow)
     title = Column(String, nullable=False, default="New Chat")
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # created_at = Column(DateTime, default=datetime.utcnow)
+    # updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     user = relationship("User", back_populates="chats")
@@ -21,8 +22,10 @@ class Message(Base):
 
     message_id = Column(Integer, primary_key=True, index=True)
     conversation_id = Column(Integer, ForeignKey("chat.conversation_id"))
-    role = Column(String, nullable=False)  # 'user' or 'assistant'
-    content = Column(String, nullable=False)
+    sender = Column(String, nullable=False)  # 'user' or 'assistant'
+    # role = Column(String, nullable=False)  # 'user' or 'assistant'
+    message_text = Column(String, nullable=False)
+    # content = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships

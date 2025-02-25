@@ -26,7 +26,7 @@ async def get_chat(user_id: int, chat_id: int, db: Session = Depends(get_db)):
 @router.get("/{use_id}", response_model=List[ChatListResponse])
 def get_user_chats(user_id: int, db: Session = Depends(get_db)):
     try:
-        chats = db.query(Chat).filter(Chat.user_id == user_id).order_by(Chat.updated_at.desc()).all()
+        chats = db.query(Chat).filter(Chat.user_id == user_id)#.order_by(Chat.updated_at.desc()).all()
         if not chats:
             return []
         return chats
@@ -39,7 +39,7 @@ async def get_chat_messages(user_id: int, chat_id: int, db: Session = Depends(ge
         chat = db.query(Chat).filter(Chat.conversation_id == chat_id, Chat.user_id == user_id).first()
         if not chat:
             raise HTTPException(status_code=404, detail="Chat not found")
-        messages = db.query(Message).filter(Message.conversation_id == chat_id).order_by(Message.created_at).all()
+        messages = db.query(Message).filter(Message.conversation_id == chat_id).order_by(Message.started_at).all()
         return messages
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -51,8 +51,8 @@ async def create_message(user_id: int, chat_id: int, message: MessageCreate, db:
         raise HTTPException(status_code=404, detail="Chat not found")
     new_message = Message(
         conversation_id=chat_id,
-        content=message.content,
-        role=message.role
+        message_text=message.message_text,
+        sender=message.sender
     )
     db.add(new_message)
     db.commit()
