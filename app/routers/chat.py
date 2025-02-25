@@ -8,22 +8,22 @@ from ..schemas.chat import ChatResponse, ChatListResponse, MessageResponse, Mess
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
 
-@router.post("/", response_model=ChatResponse)
-async def create_chat(user_id: int, db: Session = Depends(get_db)):
+@router.post("/{user_id}", response_model=ChatResponse)
+def create_chat(user_id: int, db: Session = Depends(get_db)):
     new_chat = Chat(user_id=user_id, title="New Chat")
     db.add(new_chat)
     db.commit()
     db.refresh(new_chat)
     return new_chat
 
-@router.get("/", response_model=ChatResponse)
+@router.get("/{user_id}/{chat_id}", response_model=ChatResponse)
 async def get_chat(user_id: int, chat_id: int, db: Session = Depends(get_db)):
     chat = db.query(Chat).filter(Chat.conversation_id == chat_id, Chat.user_id == user_id).first()
     if not chat:
         raise HTTPException(status_code=404, detail="Chat not found")
     return chat
 
-@router.get("/", response_model=List[ChatListResponse])
+@router.get("/{use_id}", response_model=List[ChatListResponse])
 def get_user_chats(user_id: int, db: Session = Depends(get_db)):
     try:
         chats = db.query(Chat).filter(Chat.user_id == user_id).order_by(Chat.updated_at.desc()).all()
@@ -33,7 +33,7 @@ def get_user_chats(user_id: int, db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/", response_model=List[MessageResponse])
+@router.get("/{user_id}/{chat_id}/messages", response_model=List[MessageResponse])
 async def get_chat_messages(user_id: int, chat_id: int, db: Session = Depends(get_db)):
     try:
         chat = db.query(Chat).filter(Chat.conversation_id == chat_id, Chat.user_id == user_id).first()
@@ -44,7 +44,7 @@ async def get_chat_messages(user_id: int, chat_id: int, db: Session = Depends(ge
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/", response_model=MessageResponse)
+@router.post("/{user_id}/{chat_id}/message", response_model=MessageResponse)
 async def create_message(user_id: int, chat_id: int, message: MessageCreate, db: Session = Depends(get_db)):
     chat = db.query(Chat).filter(Chat.conversation_id == chat_id, Chat.user_id == user_id).first()
     if not chat:
