@@ -13,6 +13,8 @@ class Talent(Base):
     job_title = Column(String)
     employment_type = Column(String)
     department_id = Column(Integer, ForeignKey("department.department_id"))
+    feedback_id = Column(Integer, ForeignKey("feedback.feedback_id"))
+    fun_id = Column(Integer, ForeignKey("funfacts.fun_id"))
     hire_date = Column(DateTime)
     basic_salary = Column(Float)
     gender = Column(String)
@@ -24,7 +26,9 @@ class Talent(Base):
 
     # Relationships
     department = relationship("Department", back_populates="talents")
-    talent_skills = relationship("TalentSkill", back_populates="talent", cascade="all, delete")
-    education = relationship("Education", back_populates="talent", cascade="all, delete")
-    professional_experience = relationship("ProfessionalExperience", back_populates="talent", cascade="all, delete")
-    project_assignments = relationship("ProjectAssignment", back_populates="talent", cascade="all, delete")
+    feedback = relationship("Feedback", back_populates="talents")
+    talent_skills = relationship("TalentSkill", back_populates="talents", cascade="all, delete")
+    education = relationship("Education", back_populates="talents", cascade="all, delete")
+    professional_experience = relationship("ProfessionalExperience", back_populates="talents", cascade="all, delete")
+    project_assignments = relationship("ProjectAssignment", back_populates="talents", cascade="all, delete")
+    

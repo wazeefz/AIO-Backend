@@ -18,7 +18,8 @@ class Project(Base):
     min_experience_years = Column(Integer)
     team_size = Column(Integer)
     project_description = Column(String)
+    fun_id = Column(Integer, ForeignKey("funfacts.fun_id"))
 
     # Relationships
     user = relationship("User", back_populates="projects")
-    project_assignments = relationship("ProjectAssignment", back_populates="project")
+    funfacts = relationship("FunFact", back_populates="projects")

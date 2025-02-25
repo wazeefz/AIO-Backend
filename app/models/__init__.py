@@ -6,7 +6,7 @@ from .project import Project
 from .user import User
 from .talentskill import TalentSkill
 from .education import Education
-from .experience import ProfessionalExperience
+from .professionalexperience import ProfessionalExperience
 from .assignment import ProjectAssignment
 
 __all__ = [
