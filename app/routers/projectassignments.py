@@ -38,7 +38,11 @@ def get_project_team(project_id: int, db: Session = Depends(get_db)):
             Talent.last_name.label('talent_last_name'),
             Talent.email.label('talent_email'),
             Talent.phone.label('talent_phone'),
-            Talent.job_title.label('talent_job_title')
+            Talent.job_title.label('talent_job_title'),
+            Talent.department_id.label('talent_department_id'),
+            Talent.employment_type.label('talent_employment_type'),
+            Talent.basic_salary.label('talent_basic_salary'),
+            Talent.availability_status.label('talent_availability_status'),
         )
         .all()
     )

@@ -24,7 +24,7 @@ class Talent(Base):
 
     # Relationships
     department = relationship("Department", back_populates="talents")
-    talent_skills = relationship("TalentSkill", back_populates="talent", cascade="all, delete")
+    talent_skills = relationship("TalentSkill", back_populates="talent", cascade="all, delete-orphan")
     education = relationship("Education", back_populates="talent", cascade="all, delete")
     professional_experience = relationship("ProfessionalExperience", back_populates="talent", cascade="all, delete")
     project_assignments = relationship("ProjectAssignment", back_populates="talent", cascade="all, delete")
