@@ -7,7 +7,7 @@ from .user import User
 from .talentskill import TalentSkill
 from .education import Education
 from .professionalexperience import ProfessionalExperience
-from .assignment import ProjectAssignment
+from .projectsassignment import ProjectAssignment
 
 __all__ = [
     "Base",

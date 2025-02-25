@@ -5,6 +5,7 @@ from .database import engine
 from .import models
 from .routers import department, skill, talent, project, user, gemini, feedback, funfacts, intents, messages, responses, professionalexperience, projectassignment, teamprojects
 
+
 # Initialize DB tables
 models.Base.metadata.create_all(bind=engine)
 
@@ -34,6 +35,7 @@ app.include_router(feedback.router)
 # app.include_router(professionalexperience.router)
 # app.include_router(projectassignment.router)
 # app.include_router(teamprojects.router)
+
 
 @app.get("/")
 def home():

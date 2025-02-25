@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String , DateTime
+from sqlalchemy import Column, Integer, String , DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from .base import Base
 
@@ -10,6 +10,7 @@ class Feedback(Base):
     rating = Column(Integer, nullable=False)
     created_at = Column(DateTime, nullable=False)
     feedback_text = Column(String, nullable=False)
+    talent_id = Column(Integer, ForeignKey("talents.talent_id"))
 
     # Relationships
     users = relationship("User", back_populates="feedback")

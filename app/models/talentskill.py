@@ -12,5 +12,5 @@ class TalentSkill(Base):
     last_used_date = Column(DateTime)
 
     # Relationships
-    talent = relationship("Talent", back_populates="talent_skills")
+    talents = relationship("Talent", back_populates="talent_skills")
     skill = relationship("Skill", back_populates="talent_skills")
