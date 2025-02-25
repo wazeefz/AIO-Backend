@@ -1,9 +1,10 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
-from datetime import date
+from datetime import date, datetime
 
-# Base Schema - Shared attributes
+# Base Schema with shared config
 class ProjectAssignmentBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)  # Updated for Pydantic v2
     project_id: int
     talent_id: int
     role: Optional[str] = None
@@ -39,3 +40,17 @@ class ProjectAssignmentExtendedResponse(ProjectAssignmentResponse):
 
     class Config:
         from_attributes = True
+
+# Update the AvailableTalentResponse schema
+class AvailableTalentResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    talent_id: int
+    first_name: str
+    last_name: str
+    email: str
+    phone: Optional[str] = None
+    job_title: Optional[str] = None
+    employment_type: Optional[str] = None
+    department_id: Optional[int] = None
+    hire_date: Optional[datetime] = None
+    availability_status: Optional[str] = None

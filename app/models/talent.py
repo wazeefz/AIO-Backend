@@ -28,3 +28,13 @@ class Talent(Base):
     education = relationship("Education", back_populates="talent", cascade="all, delete")
     professional_experience = relationship("ProfessionalExperience", back_populates="talent", cascade="all, delete")
     project_assignments = relationship("ProjectAssignment", back_populates="talent", cascade="all, delete")
+
+    def to_dict(self):
+        """Convert model instance to dictionary"""
+        return {
+            "talent_id": self.talent_id,
+            "name": f"{self.first_name} {self.last_name}",
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+            "department_id": self.department_id
+        }
