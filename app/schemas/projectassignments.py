@@ -33,9 +33,19 @@ class ProjectAssignmentResponse(ProjectAssignmentBase):
 
 # Optional: Extended Response Schema with nested project and talent details
 class ProjectAssignmentExtendedResponse(ProjectAssignmentResponse):
+    # Project details
     project_name: Optional[str] = None
+    project_status: Optional[str] = None
+    project_progress: Optional[int] = None
+    project_budget: Optional[float] = None
+    project_start_date: Optional[datetime] = None
+    project_description: Optional[str] = None
+    
+    # Talent details
     talent_first_name: Optional[str] = None
     talent_last_name: Optional[str] = None
+    talent_email: Optional[str] = None
+    talent_phone: Optional[str] = None
     talent_job_title: Optional[str] = None
 
     class Config:

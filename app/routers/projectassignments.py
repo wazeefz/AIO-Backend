@@ -20,13 +20,62 @@ def get_all_project_assignments(skip: int = 0, limit: int = 100, db: Session = D
 
 @router.get("/project/{project_id}/team", response_model=List[ProjectAssignmentExtendedResponse])
 def get_project_team(project_id: int, db: Session = Depends(get_db)):
-    """Get all team members assigned to a specific project"""
-    assignments = db.query(ProjectAssignment).filter(
-        ProjectAssignment.project_id == project_id
-    ).all()
+    """Get all team members assigned to a specific project with complete project and talent details"""
+    assignments = (
+        db.query(ProjectAssignment)
+        .join(Project)
+        .join(Talent)
+        .filter(ProjectAssignment.project_id == project_id)
+        .add_columns(
+            # Project columns
+            Project.name.label('project_name'),
+            Project.status.label('project_status'),
+            Project.progress.label('project_progress'),
+            Project.budget.label('project_budget'),
+            Project.project_description.label('project_description'),
+            # Talent columns
+            Talent.first_name.label('talent_first_name'),
+            Talent.last_name.label('talent_last_name'),
+            Talent.email.label('talent_email'),
+            Talent.phone.label('talent_phone'),
+            Talent.job_title.label('talent_job_title')
+        )
+        .all()
+    )
+    
     if not assignments:
         return []
-    return assignments
+    
+    # Transform the results to match the response model
+    result = []
+    for (assignment, project_name, project_status, project_progress, project_budget,
+         project_description, talent_first_name, talent_last_name, talent_email,
+         talent_phone, talent_job_title) in assignments:
+        
+        assignment_dict = {
+            "project_id": assignment.project_id,
+            "talent_id": assignment.talent_id,
+            "role": assignment.role,
+            "assignment_start_date": assignment.assignment_start_date,
+            "assignment_end_date": assignment.assignment_end_date,
+            "performance_rating": assignment.performance_rating,
+            "assignment_id": assignment.assignment_id,
+            # Project details
+            "project_name": project_name,
+            "project_status": project_status,
+            "project_progress": project_progress,
+            "project_budget": project_budget,
+            "project_description": project_description,
+            # Talent details
+            "talent_first_name": talent_first_name,
+            "talent_last_name": talent_last_name,
+            "talent_email": talent_email,
+            "talent_phone": talent_phone,
+            "talent_job_title": talent_job_title
+        }
+        result.append(assignment_dict)
+    
+    return result
 
 @router.get("/available-talents/{project_id}", response_model=List[AvailableTalentResponse])
 def get_available_talents(project_id: int, db: Session = Depends(get_db)):
