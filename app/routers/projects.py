@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from ..database import get_db
 from ..models.projects import Project
-from ..schemas.project import ProjectBase, ProjectResponse
+from ..schemas.projects import ProjectBase, ProjectResponse
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
