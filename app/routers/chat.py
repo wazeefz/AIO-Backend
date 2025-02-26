@@ -39,7 +39,7 @@ async def get_chat_messages(user_id: int, chat_id: int, db: Session = Depends(ge
         chat = db.query(Chat).filter(Chat.conversation_id == chat_id, Chat.user_id == user_id).first()
         if not chat:
             raise HTTPException(status_code=404, detail="Chat not found")
-        messages = db.query(Message).filter(Message.conversation_id == chat_id).order_by(Message.started_at).all()
+        messages = db.query(Message).filter(Message.conversation_id == chat_id).order_by(Message.created_at).all()
         return messages
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -58,5 +58,3 @@ async def create_message(user_id: int, chat_id: int, message: MessageCreate, db:
     db.commit()
     db.refresh(new_message)
     return new_message
-
-
