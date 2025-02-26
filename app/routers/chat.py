@@ -21,7 +21,7 @@ def get_chat(conversation_id: int, db: Session = Depends(get_db)):
 
 @router.post("/", response_model=ChatResponse, status_code=status.HTTP_201_CREATED)
 def create_chat(chat: ChatBase, db: Session = Depends(get_db)):
-    if db.query(Chat).filter(Chat.name == chat.name).first():
+    if db.query(Chat).filter(Chat.conversation_id == chat.conversation_id).first():
         raise HTTPException(status_code=400, detail="Chat already exists")
     
     new_chat = Chat(**chat.dict())

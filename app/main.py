@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .database import engine
 from . import models
-from .routers import department, skill, talent, project, user, gemini, feedback, chat
+from .routers import department, skill, talent, project, user, gemini, feedback, chat, education,experienceskills
 
 # Initialize DB tables
 models.Base.metadata.create_all(bind=engine)
@@ -28,6 +28,8 @@ app.include_router(user.router)
 app.include_router(gemini.router)
 app.include_router(feedback.router)
 app.include_router(chat.router)
+app.include_router(education.router)
+app.include_router(experienceskills.router)
 
 @app.get("/")
 def home():
