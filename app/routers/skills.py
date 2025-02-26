@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from ..database import get_db
 from ..models import Skill
-from ..schemas.skill import SkillCreate, SkillResponse, SkillUpdate
+from ..schemas.skills import SkillCreate, SkillResponse, SkillUpdate
 
 router = APIRouter(prefix="/skills", tags=["skills"])
 

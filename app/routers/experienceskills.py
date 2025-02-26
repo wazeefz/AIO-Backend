@@ -9,15 +9,15 @@ from ..schemas.experienceskills import ExperienceSkillBase, ExperienceSkillRespo
 router = APIRouter(prefix="/experienceskills", tags=["experienceskills"])
 
 @router.get("/", response_model=List[ExperienceSkillResponse])
-def get_chats(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def get_experienceskill(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return db.query(ExperienceSkills).offset(skip).limit(limit).all()
 
 @router.get("/{skill_id}", response_model=ExperienceSkillResponse)
-def get_chat(skill_id: int, db: Session = Depends(get_db)):
-    chat = db.query(ExperienceSkills).filter(ExperienceSkills.skill_id == skill_id).first()
-    if chat is None:
+def get_experienceskill(skill_id: int, db: Session = Depends(get_db)):
+    experienceskill = db.query(ExperienceSkills).filter(ExperienceSkills.skill_id == skill_id).first()
+    if experienceskill is None:
         raise HTTPException(status_code=404, detail="Skill not found")
-    return chat
+    return experienceskill
 
 @router.post("/", response_model=ExperienceSkillResponse, status_code=status.HTTP_201_CREATED)
 def create_experienceskill(chat: ExperienceSkillBase, db: Session = Depends(get_db)):

@@ -9,8 +9,8 @@ class FeedbackBase(BaseModel):
     feedback_text: str
 
 # Create Schema - Used for input validation when creating a new feedback
-# class FeedbackCreate(FeedbackBase):
-#     message_id: int
+class FeedbackCreate(FeedbackBase):
+    message_id: int
 
 # Update Schema - Used when updating an existing feedback
 class FeedbackUpdate(FeedbackBase):
