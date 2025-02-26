@@ -8,76 +8,57 @@ from ..schemas.projectassignments import (
     ProjectAssignmentCreate,
     ProjectAssignmentResponse,
     ProjectAssignmentUpdate,
-    ProjectAssignmentExtendedResponse,
+    ProjectTeamMemberResponse,
     AvailableTalentResponse
 )
 
 router = APIRouter(prefix="/project-assignments", tags=["project-assignments"])
 
-@router.get("/", response_model=List[ProjectAssignmentExtendedResponse])
+@router.get("/", response_model=List[ProjectAssignmentResponse])
 def get_all_project_assignments(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return db.query(ProjectAssignment).offset(skip).limit(limit).all()
 
-@router.get("/project/{project_id}/team", response_model=List[ProjectAssignmentExtendedResponse])
+@router.get("/project/{project_id}/team", response_model=List[ProjectTeamMemberResponse])
 def get_project_team(project_id: int, db: Session = Depends(get_db)):
-    """Get all team members assigned to a specific project with complete project and talent details"""
-    assignments = (
-        db.query(ProjectAssignment)
-        .join(Project)
+    """Get all team members assigned to a specific project with essential information"""
+    # First check if project exists
+    project = db.query(Project).filter(Project.project_id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    # Query assignments with joined talent information
+    team_members = (
+        db.query(
+            ProjectAssignment.talent_id,
+            ProjectAssignment.role,
+            ProjectAssignment.performance_rating,
+            ProjectAssignment.assignment_start_date,
+            ProjectAssignment.assignment_end_date,
+            Talent.first_name,
+            Talent.last_name,
+            Talent.job_title,
+            Talent.email
+        )
         .join(Talent)
         .filter(ProjectAssignment.project_id == project_id)
-        .add_columns(
-            # Project columns
-            Project.name.label('project_name'),
-            Project.status.label('project_status'),
-            Project.progress.label('project_progress'),
-            Project.budget.label('project_budget'),
-            Project.project_description.label('project_description'),
-            # Talent columns
-            Talent.first_name.label('talent_first_name'),
-            Talent.last_name.label('talent_last_name'),
-            Talent.email.label('talent_email'),
-            Talent.phone.label('talent_phone'),
-            Talent.job_title.label('talent_job_title'),
-            Talent.department_id.label('talent_department_id'),
-            Talent.employment_type.label('talent_employment_type'),
-            Talent.basic_salary.label('talent_basic_salary'),
-            Talent.availability_status.label('talent_availability_status'),
-        )
         .all()
     )
     
-    if not assignments:
-        return []
-    
     # Transform the results to match the response model
     result = []
-    for (assignment, project_name, project_status, project_progress, project_budget,
-         project_description, talent_first_name, talent_last_name, talent_email,
-         talent_phone, talent_job_title) in assignments:
-        
-        assignment_dict = {
-            "project_id": assignment.project_id,
-            "talent_id": assignment.talent_id,
-            "role": assignment.role,
-            "assignment_start_date": assignment.assignment_start_date,
-            "assignment_end_date": assignment.assignment_end_date,
-            "performance_rating": assignment.performance_rating,
-            "assignment_id": assignment.assignment_id,
-            # Project details
-            "project_name": project_name,
-            "project_status": project_status,
-            "project_progress": project_progress,
-            "project_budget": project_budget,
-            "project_description": project_description,
-            # Talent details
-            "talent_first_name": talent_first_name,
-            "talent_last_name": talent_last_name,
-            "talent_email": talent_email,
-            "talent_phone": talent_phone,
-            "talent_job_title": talent_job_title
+    for member in team_members:
+        team_member = {
+            "talent_id": member.talent_id,
+            "first_name": member.first_name,
+            "last_name": member.last_name,
+            "job_title": member.job_title or "Not Specified",
+            "role": member.role,
+            "email": member.email,
+            "performance_rating": member.performance_rating,
+            "assignment_start_date": member.assignment_start_date,
+            "assignment_end_date": member.assignment_end_date
         }
-        result.append(assignment_dict)
+        result.append(team_member)
     
     return result
 
