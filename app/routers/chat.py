@@ -68,7 +68,7 @@ async def get_chat(user_id: int, chat_id: int, db: Session = Depends(get_db)):
 @router.get("/{user_id}", response_model=List[ChatListResponse])
 def get_user_chats(user_id: int, db: Session = Depends(get_db)):
     try:
-        chats = db.query(Chat).filter(Chat.user_id == user_id)#.order_by(Chat.updated_at.desc()).all()
+        chats = db.query(Chat).filter(Chat.user_id == user_id).order_by(Chat.started_at.desc()).all()
         if not chats:
             return []
         return chats
