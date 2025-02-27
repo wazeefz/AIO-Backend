@@ -12,4 +12,3 @@ class Response(Base):
 
     # Relationships (Bi-directional)
     intent = relationship("Intent", back_populates="responses")
-    messages = relationship("Messages", back_populates="response")

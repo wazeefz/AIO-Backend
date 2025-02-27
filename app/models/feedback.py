@@ -12,4 +12,3 @@ class Feedback(Base):
     feedback_text = Column(String)
 
     # Relationships
-    message = relationship("Messages", back_populates="feedback")

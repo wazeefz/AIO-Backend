@@ -24,7 +24,5 @@ class Project(Base):
     # Relationships
     user = relationship("User", back_populates="projects")
     project_assignments = relationship("ProjectAssignment", back_populates="project")
-    messages = relationship("Messages", back_populates="projects")
     team_members = relationship("TeamProjects", back_populates="project")
-    chats = relationship("Chat", back_populates="project")
     fun_facts = relationship("FunFacts", back_populates="project")

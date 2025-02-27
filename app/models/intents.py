@@ -10,5 +10,4 @@ class Intent(Base):
     description = Column(Text)
 
     # Relationship to the Message model (bi-directional)
-    messages = relationship("Messages", back_populates="intent")
     responses = relationship("Response", back_populates="intent")

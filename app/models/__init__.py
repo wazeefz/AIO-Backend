@@ -1,12 +1,10 @@
 from .base import Base
-from .chat import Chat
 from .department import Department
 from .education import Education
 from .experienceskills import ExperienceSkills
 from .feedback import Feedback
 from .funfacts import FunFacts
 from .intents import Intent
-from .messages import Messages
 from .professionalexperience import ProfessionalExperience
 from .projectassignments import ProjectAssignment
 from .projects import Project
@@ -20,14 +18,12 @@ from .user import User
 
 __all__ = [
     "Base",
-    "Chat",
     "Department",
     "Education",
     "ExperienceSkills"
     "Feedback"
     "FunFacts"
     "Intent"
-    "Messages",
     "ProfessionalExperience",
     "ProjectAssignment",
     "Project"
