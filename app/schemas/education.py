@@ -3,6 +3,7 @@ from typing import Optional, List
 from datetime import datetime
 
 class EducationBase(BaseModel):
+    education_id: int
     talent_id: int
     institution_name: str
     qualification_type: str

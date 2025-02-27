@@ -5,6 +5,7 @@ from datetime import datetime
 # Base Schema - Shared attributes
 class ProjectBase(BaseModel):
     name: str
+    project_id: int
     project_description: Optional[str] = None
     starred: Optional[bool] = False
     cv_count: Optional[int] = 0

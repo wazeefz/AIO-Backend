@@ -4,6 +4,7 @@ from datetime import datetime
 
 # Base Schema - Shared attributes
 class TalentBase(BaseModel):
+    talent_id: int
     first_name: str
     last_name: str
     email: str

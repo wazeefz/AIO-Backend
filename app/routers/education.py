@@ -22,7 +22,7 @@ def get_education(education_id: int, db: Session = Depends(get_db)):
 
 @router.post("/", response_model=EducationResponse, status_code=status.HTTP_201_CREATED)
 def create_education(education: EducationBase, db: Session = Depends(get_db)):
-    if db.query(Education).filter(Education.name == education.name).first():
+    if db.query(Education).filter(Education.education_id == education.education_id).first():
         raise HTTPException(status_code=400, detail="Education already exists")
     
     new_education = Education(**education.dict())
