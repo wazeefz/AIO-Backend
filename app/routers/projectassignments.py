@@ -19,51 +19,56 @@ def get_all_project_assignments(skip: int = 0, limit: int = 100, db: Session = D
     return db.query(ProjectAssignment).offset(skip).limit(limit).all()
 
 
-# # FIX
-# @router.get("/project/{project_id}/team", response_model=List[ProjectTeamMemberResponse])
-# def get_project_team(project_id: int, db: Session = Depends(get_db)):
-#     """Get all team members assigned to a specific project with essential information"""
-#     # First check if project exists
-#     project = db.query(Project).filter(Project.project_id == project_id).first()
-#     if not project:
-#         raise HTTPException(status_code=404, detail="Project not found")
+# To be used for getting all members of an assigned project 
+@router.get("/project/{project_id}/team", response_model=List[ProjectTeamMemberResponse])
+def get_project_team(project_id: int, db: Session = Depends(get_db)):
+    """Get all team members assigned to a specific project with essential information"""
+    # First check if project exists
+    project = db.query(Project).filter(Project.project_id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
 
-#     # Query assignments with joined talent information
-#     team_members = (
-#         db.query(
-#             ProjectAssignment.talent_id,
-#             ProjectAssignment.role,
-#             ProjectAssignment.performance_rating,
-#             ProjectAssignment.assignment_start_date,
-#             ProjectAssignment.assignment_end_date,
-#             Talent.first_name,
-#             Talent.last_name,
-#             Talent.job_title,
-#             Talent.email
-#         )
-#         .join(Talent)
-#         .filter(ProjectAssignment.project_id == project_id)
-#         .all()
-#     )
+    # Get team members with their department information
+    team_members = (
+        db.query(
+            Talent,
+            Department.department_name.label('department_name'),
+            ProjectAssignment.role,
+            ProjectAssignment.performance_rating,
+            ProjectAssignment.assignment_start_date,
+            ProjectAssignment.assignment_end_date
+        )
+        .join(ProjectAssignment, ProjectAssignment.talent_id == Talent.talent_id)
+        .join(Department, Department.department_id == Talent.department_id)
+        .filter(ProjectAssignment.project_id == project_id)
+        .all()
+    )
     
-#     # Transform the results to match the response model
-#     result = []
-#     for member in team_members:
-#         team_member = {
-#             "talent_id": member.talent_id,
-#             "first_name": member.first_name,
-#             "last_name": member.last_name,
-#             "job_title": member.job_title or "Not Specified",
-#             "role": member.role,
-#             "email": member.email,
-#             "performance_rating": member.performance_rating,
-#             "assignment_start_date": member.assignment_start_date,
-#             "assignment_end_date": member.assignment_end_date
-#         }
-#         result.append(team_member)
+    # Transform the results to match the response schema
+    result = []
+    for (talent, department_name, role, performance_rating, 
+         assignment_start_date, assignment_end_date) in team_members:
+        team_member_dict = {
+            "talent_id": talent.talent_id,
+            "first_name": talent.first_name,
+            "last_name": talent.last_name,
+            "email": talent.email,
+            "basic_salary": talent.basic_salary,
+            "phone": talent.phone,
+            "job_title": talent.job_title,
+            "department_name": department_name,
+            "role": role,
+            "performance_rating": performance_rating,
+            "assignment_start_date": assignment_start_date,
+            "assignment_end_date": assignment_end_date,
+            "total_experience_years": talent.total_experience_years
+        }
+        result.append(team_member_dict)
     
-#     return result
+    return result
+    
 
+#To be used to see what members are available to be assigned to a project
 @router.get("/available-talents/{project_id}", response_model=List[AvailableTalentResponse])
 def get_available_talents(project_id: int, db: Session = Depends(get_db)):
     """Get all talents not assigned to the specified project with complete information"""
