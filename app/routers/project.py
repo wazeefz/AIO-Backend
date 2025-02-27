@@ -34,17 +34,22 @@ def update_project(project_id: int, project: ProjectBase, db: Session = Depends(
     db_project = db.query(Project).filter(Project.project_id == project_id).first()
     if db_project is None:
         raise HTTPException(status_code=404, detail="Project not found")
-    
-    project_exists = db.query(Project).filter(Project.name == project.name).first()
-    if project_exists:
-        raise HTTPException(status_code=400, detail="Project name already exists")
-    
-    for key, value in project.dict().items():
-        setattr(db_project, key, value)
 
-    db.commit()
-    db.refresh(db_project)
-    return db_project
+    # ✅ Debug: Print received data
+    print("Received PUT Request Data:", project.dict())
+
+    try:
+        # ✅ Only update fields that are present in the request
+        for key, value in project.dict(exclude_unset=True).items():
+            setattr(db_project, key, value)
+
+        db.commit()
+        db.refresh(db_project)
+        return db_project
+
+    except Exception as e:
+        print("Error updating project:", str(e))
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @router.delete("/{project_id}")
 def delete_project(project_id: int, db: Session = Depends(get_db)):
