@@ -2,18 +2,31 @@ from pydantic import BaseModel
 from typing import List
 from datetime import datetime
 
+# class MessageCreate(BaseModel):
+#     message_text: str
+#     # content: str
+#     sender: str
+#     # role: str
+
+# class MessageResponse(BaseModel):
+#     message_id: int
+#     message_text: str
+#     sender: str
+#     # content: str
+#     # role: str
+#     created_at: datetime
+
+#     class Config:
+#         orm_mode = True
+
 class MessageCreate(BaseModel):
     message_text: str
-    # content: str
     sender: str
-    # role: str
 
 class MessageResponse(BaseModel):
     message_id: int
     message_text: str
     sender: str
-    # content: str
-    # role: str
     created_at: datetime
 
     class Config:
