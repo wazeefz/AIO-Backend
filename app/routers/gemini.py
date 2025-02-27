@@ -44,6 +44,64 @@ class ResumeReport(BaseModel):
     professional_summary: Optional[str] = Field(None, description="Professional summary")
 
 
+# @router.post("/summarize_resume")
+# async def summarize_resume(file: UploadFile = File(...)):
+#     """Extract structured data from a resume (PDF) using Gemini API."""
+#     if not file.filename.endswith(".pdf"):
+#         raise HTTPException(status_code=400, detail="Only PDF files are supported")
+
+#     try:
+#         contents = await file.read()
+#         text = read_pdf_file(BytesIO(contents))
+
+#         prompt = f"""
+#         You are a meticulous hiring manager tasked with extracting key information from a resume. Your job is to convert the unstructured data into structured JSON format.
+
+#         Please extract the information from the resume provided below, delimited by triple backticks, and present it as a JSON object with the following fields. If any information is missing, include the key with a `null` value:
+
+#         Fields to extract:
+
+#         1. name: Full name of the candidate.
+
+#         2. address: The address provided by the candidate (if available).
+
+#         3. contact_details: Includes: phone: Phone number. Example: `+60123456789`
+#             - email: Email address. Example: `work@yahoo.com`
+#             - socials: A dictionary of the candidates social media profiles, such as LinkedIn and GitHub. 
+
+#         4. skills: List of technical, professional, and language skills. Include co-curricular activity skills (if explicitly mentioned as skills). Do not include hobbies or interests unless they are marked as skills.
+
+#         5. education: List of educational qualifications with the following details:
+#             - institution: Name of the institution.
+#             - level: Level of education (e.g., Bachelor's, Master's, PhD).
+#             - degree: Specific degree title (e.g., Bachelor of Information Systems (Honours) (Data Analytics)).
+#             - field: Extract the field from the degree. Example: "Information Systems" for "Bachelor of Information Systems".
+#             - cgpa: Cumulative Grade Point Average, if provided.
+#             - start_year: Start year of the program.
+#             - graduation_year: Graduation or expected graduation year.
+
+#         6. professional_summary: Write a concise and well-crafted summary of the candidate's experience, skills, and qualifications based on the extracted information.
+
+#         ```{text}```
+        
+#         Please ensure the JSON output is correctly formatted, ignore newline chracters (such as '\n'), follows the field requirements strictly, and provides accurate interpretations of the data.
+#         """
+
+#         prompt_template = PromptTemplate(template=prompt, input_variables=["text"])
+#         output_parser = JsonOutputParser()
+
+#         # Execute the chain
+#         chain = prompt_template | llm | output_parser
+#         response = chain.invoke({"text": text})
+
+#         if not isinstance(response, dict):
+#             raise ValueError("Invalid response format from Gemini")
+
+#         return response  # Directly return as a dictionary
+
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=f"Error processing resume: {str(e)}")
+
 @router.post("/summarize_resume")
 async def summarize_resume(file: UploadFile = File(...)):
     """Extract structured data from a resume (PDF) using Gemini API."""
@@ -55,36 +113,36 @@ async def summarize_resume(file: UploadFile = File(...)):
         text = read_pdf_file(BytesIO(contents))
 
         prompt = f"""
-        You are a meticulous hiring manager tasked with extracting key information from a resume. Your job is to convert the unstructured data into structured JSON format.
+        You are a meticulous hiring manager tasked with extracting key information from a resume. Convert the unstructured data into structured JSON format.
 
-        Please extract the information from the resume provided below, delimited by triple backticks, and present it as a JSON object with the following fields. If any information is missing, include the key with a `null` value:
+        Extract the following fields:
 
-        Fields to extract:
+        1. full_name: Full name of the candidate.
 
-        1. name: Full name of the candidate.
+        2. address: The candidate's address (if available).
 
-        2. address: The address provided by the candidate (if available).
+        3. phone: Phone number. Example: `+60123456789`
 
-        3. contact_details: Includes: phone: Phone number. Example: `+60123456789`
-            - email: Email address. Example: `work@yahoo.com`
-            - socials: A dictionary of the candidates social media profiles, such as LinkedIn and GitHub. 
+        4. email: Email address. Example: `work@yahoo.com`
 
-        4. skills: List of technical, professional, and language skills. Include co-curricular activity skills (if explicitly mentioned as skills). Do not include hobbies or interests unless they are marked as skills.
+        5. linkedin: LinkedIn profile link, if available.
 
-        5. education: List of educational qualifications with the following details:
+        6. github: GitHub profile link, if available.
+
+        7. skills: List of technical, professional, and language skills.
+
+        8. education: A list of educational qualifications containing:
             - institution: Name of the institution.
-            - level: Level of education (e.g., Bachelor's, Master's, PhD).
-            - degree: Specific degree title (e.g., Bachelor of Information Systems (Honours) (Data Analytics)).
-            - field: Extract the field from the degree. Example: "Information Systems" for "Bachelor of Information Systems".
+            - degree: Specific degree title (e.g., "Bachelor of Information Systems").
+            - field: Extract the field from the degree.
             - cgpa: Cumulative Grade Point Average, if provided.
             - start_year: Start year of the program.
             - graduation_year: Graduation or expected graduation year.
 
-        6. professional_summary: Write a concise and well-crafted summary of the candidate's experience, skills, and qualifications based on the extracted information.
+        9. professional_summary: A concise summary of the candidate's experience, skills, and qualifications.
 
         ```{text}```
-        
-        Please ensure the JSON output is correctly formatted, ignore newline chracters (such as '\n'), follows the field requirements strictly, and provides accurate interpretations of the data.
+        Ensure the JSON output is correctly formatted, ignoring newline characters and following the field requirements strictly.
         """
 
         prompt_template = PromptTemplate(template=prompt, input_variables=["text"])
@@ -97,7 +155,21 @@ async def summarize_resume(file: UploadFile = File(...)):
         if not isinstance(response, dict):
             raise ValueError("Invalid response format from Gemini")
 
-        return response  # Directly return as a dictionary
+        # Flattening contact details for frontend compatibility
+        formatted_response = {
+            "full_name": response.get("name"),
+            "address": response.get("address"),
+            "phone": response.get("contact_details", {}).get("phone"),
+            "email": response.get("contact_details", {}).get("email"),
+            "linkedin": response.get("contact_details", {}).get("socials", {}).get("LinkedIn"),
+            "github": response.get("contact_details", {}).get("socials", {}).get("GitHub"),
+            "skills": response.get("skills", []),
+            "education": response.get("education", []),
+            "professional_summary": response.get("professional_summary"),
+        }
+
+        return formatted_response
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing resume: {str(e)}")
+
