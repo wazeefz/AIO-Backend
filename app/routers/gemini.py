@@ -117,7 +117,7 @@ async def summarize_resume(file: UploadFile = File(...)):
 
         Extract the following fields:
 
-        1. full_name: Full name of the candidate.
+        1. first_name: First name of the candidate. If the candidate has a 'bin' or 'binti' inside their name, anything before that is their first_name and anyhting after that is their 'last_name'
 
         2. address: The candidate's address (if available).
 
