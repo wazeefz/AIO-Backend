@@ -21,9 +21,6 @@ def get_proex(experience_id: int, db: Session = Depends(get_db)):
 
 @router.post("/", response_model=ProfessionalExperienceResponse, status_code=status.HTTP_201_CREATED)
 def create_proex(experience: ProfessionalExperienceBase, db: Session = Depends(get_db)):
-    if db.query(ProfessionalExperience).filter(ProfessionalExperience.experience_id == ProfessionalExperience.experience_id).first():
-        raise HTTPException(status_code=400, detail="Professional experience already exists")
-    
     new_proex = ProfessionalExperience(**experience.dict())
     db.add(new_proex)
     db.commit()

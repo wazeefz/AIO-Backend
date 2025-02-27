@@ -21,9 +21,6 @@ def get_response(response_id: int, db: Session = Depends(get_db)):
 
 @router.post("/", response_model=ResponseResponse, status_code=status.HTTP_201_CREATED)
 def create_response(response_id: ResponseBase, db: Session = Depends(get_db)):
-    if db.query(Response).filter(Response.response_id == Response.response_id).first():
-        raise HTTPException(status_code=400, detail="Response already exists")
-    
     new_response = Response(**response_id.dict())
     db.add(new_response)
     db.commit()

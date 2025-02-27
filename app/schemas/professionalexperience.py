@@ -5,6 +5,7 @@ from datetime import datetime
 class ProfessionalExperienceBase(BaseModel):
     company_name: str
     experience_id: int
+    talent_id: int
     job_title: str
     location: str
     employment_type: str
