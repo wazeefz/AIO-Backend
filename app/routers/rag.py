@@ -43,6 +43,40 @@ def find_similar_resumes(query: str, limit: int = 5) -> List[Dict]:
     
     return list(results)
 
+# @router.get("/assemble-team")
+# async def assemble_team(project_requirements: str):
+#     try:
+#         if not project_requirements:
+#             raise HTTPException(
+#                 status_code=400, 
+#                 detail="Project requirements are required"
+#             )
+        
+#         relevant_resumes = find_similar_resumes(project_requirements)
+        
+#         context = "\n\nAvailable Candidates:\n"
+#         for resume in relevant_resumes:
+#             context += f"Candidate from {resume['metadata']['file_name']}:\n{resume['text']}\n\n"
+        
+#         prompt = f"{SYSTEM_PROMPT}\n\nProject Requirements:\n{project_requirements}\n{context}"
+#         response = llm.predict(prompt)
+        
+#         return {
+#             "project_requirements": project_requirements,
+#             "team_recommendation": response,
+#             "sources": [
+#                 {
+#                     "file_name": resume["metadata"]["file_name"],
+#                     "page_number": resume["metadata"]["page_number"]
+#                 }
+#                 for resume in relevant_resumes
+#             ]
+#         }
+
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/assemble-team")
 async def assemble_team(project_requirements: str):
     try:
@@ -67,7 +101,7 @@ async def assemble_team(project_requirements: str):
             "sources": [
                 {
                     "file_name": resume["metadata"]["file_name"],
-                    "page_number": resume["metadata"]["page_number"]
+                    "page_number": resume.get("page_number", "N/A")  # Use get to avoid KeyError
                 }
                 for resume in relevant_resumes
             ]
