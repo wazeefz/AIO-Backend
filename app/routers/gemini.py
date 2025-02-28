@@ -153,8 +153,8 @@ async def summarize_resume(file: UploadFile = File(...)):
 
             14. **summary**: A concise summary of the candidate’s qualifications, skills, and experience.
 
-            15. **experience**: A high-level description of the candidate’s work experience.
-                - Example: `"5+ years of experience in software development"`
+            15. **experience**: Number of years the candidate has been working. Strictly in numeric data type
+                - Example: 2
 
             16. **skills**: List of technical, professional, and language skills.
                 - Do not include hobbies unless explicitly mentioned as skills.
