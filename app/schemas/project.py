@@ -17,6 +17,13 @@ class ProjectBase(BaseModel):
     min_experience_years: Optional[int] = None
     team_size: Optional[int] = None
 
+    # Added new fields
+    project_period: Optional[str] = None
+    tech_skill: int
+    quality: int
+    collaboration: int
+    remarks: Optional[str] = None
+
 # Create Schema - Used for input validation when creating a new project
 class ProjectCreate(ProjectBase):
     name: str  # Required field

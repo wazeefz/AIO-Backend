@@ -19,6 +19,14 @@ class Project(Base):
     team_size = Column(Integer)
     project_description = Column(String)
 
+    # Added new fields
+    project_period = Column(String(50))
+    tech_skill = Column(Integer, nullable=False)
+    quality = Column(Integer, nullable=False)
+    collaboration = Column(Integer, nullable=False)
+    remarks = Column(String)
+
+
     # Relationships
     user = relationship("User", back_populates="projects")
     project_assignments = relationship("ProjectAssignment", back_populates="project")
