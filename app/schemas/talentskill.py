@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import datetime
+from .skill import SkillResponse  # Import SkillResponse schema
 
 # Base Schema - Shared attributes
 class TalentSkillBase(BaseModel):
@@ -20,6 +21,11 @@ class TalentSkillUpdate(BaseModel):
     years_of_experience: Optional[float] = None
     last_used_date: Optional[datetime] = None
 
-# Response Schema
-class TalentSkillResponse(TalentSkillBase):
+# Response Schema with Skill Details
+class TalentSkillResponse(BaseModel):
+    proficiency_level: int
+    years_of_experience: float
+    last_used_date: datetime
+    skill: SkillResponse  # ✅ Include skill details
+
     model_config = ConfigDict(from_attributes=True)  # Pydantic v2 compatibility

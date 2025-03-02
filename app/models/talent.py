@@ -14,13 +14,14 @@ class Talent(Base):
     employment_type = Column(String)
     department_id = Column(Integer, ForeignKey("department.department_id"))
     hire_date = Column(DateTime)
-    basic_salary = Column(Float)
+    basic_salary = Column(Float, nullable=False, default=0)
     gender = Column(String)
     date_of_birth = Column(DateTime)
     marital_status = Column(Boolean)
-    total_experience_years = Column(Float)
+    total_experience_years = Column(Float, nullable=False, default=0.0)
     career_preferences = Column(String)
-    availability_status = Column(String)
+    availability_status = Column(String, nullable=False, default="available")
+
 
     # Relationships
     department = relationship("Department", back_populates="talents")

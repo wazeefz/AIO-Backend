@@ -8,6 +8,7 @@ from .talentskill import TalentSkill
 from .education import Education
 from .experience import ProfessionalExperience
 from .assignment import ProjectAssignment
+from .certification import Certification
 
 __all__ = [
     "Base",
@@ -19,5 +20,6 @@ __all__ = [
     "TalentSkill",
     "Education",
     "ProfessionalExperience",
-    "ProjectAssignment"
+    "ProjectAssignment",
+    "Certification"
 ]
