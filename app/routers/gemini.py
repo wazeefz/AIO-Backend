@@ -61,7 +61,9 @@ class ResumeReport(BaseModel):
 
 #         Fields to extract:
 
-#         1. name: Full name of the candidate.
+#         1. firstName: The first name of the candidate. If you encounter a 'bin' or 'binti' keyword, then everything before that is the firstName .
+
+#         1. lastName: The last name of the candidate. If you encounter a 'bin' or 'binti' keyword, then everything after that is the lastName .
 
 #         2. address: The address provided by the candidate (if available).
 
@@ -113,37 +115,106 @@ async def summarize_resume(file: UploadFile = File(...)):
         text = read_pdf_file(BytesIO(contents))
 
         prompt = f"""
-        You are a meticulous hiring manager tasked with extracting key information from a resume. Convert the unstructured data into structured JSON format.
+            You are a meticulous hiring manager tasked with extracting key information from a resume. Your job is to convert the unstructured data into a structured JSON format.
 
-        Extract the following fields:
+            Please extract the information from the resume provided below, delimited by triple backticks, and present it as a JSON object with the following fields. If any information is missing, include the key with a `null` value:
 
-        1. full_name: Full name of the candidate.
+            ### **📌 Fields to Extract**
+            1. **profilePic**: URL of the candidate’s profile picture (if available). If not found, return `null`.
 
-        2. address: The candidate's address (if available).
+            2. **firstName**: The first name of the candidate.
+            - If you encounter a 'bin' or 'binti' keyword, extract everything **before** that as the `firstName`.
 
-        3. phone: Phone number. Example: `+60123456789`
+            3. **lastName**: The last name of the candidate.
+            - If you encounter a 'bin' or 'binti' keyword, extract everything **after** that as the `lastName`.
 
-        4. email: Email address. Example: `work@yahoo.com`
+            4. **email**: Candidate's email address (must be valid format).
 
-        5. linkedin: LinkedIn profile link, if available.
+            5. **phone**: Candidate's phone number.
+            - Example: `+60123456789`
+            - Ensure it is properly formatted with country code (if available).
 
-        6. github: GitHub profile link, if available.
+            6. **dateOfBirth**: The candidate's birth date in `YYYY-MM-DD` format.
 
-        7. skills: List of technical, professional, and language skills.
+            7. **age**: The candidate’s age in years.
+            - Calculate it based on `dateOfBirth`.
 
-        8. education: A list of educational qualifications containing:
-            - institution: Name of the institution.
-            - degree: Specific degree title (e.g., "Bachelor of Information Systems").
-            - field: Extract the field from the degree.
-            - cgpa: Cumulative Grade Point Average, if provided.
-            - start_year: Start year of the program.
-            - graduation_year: Graduation or expected graduation year.
+            8. **gender**: The candidate's gender (if explicitly mentioned).
 
-        9. professional_summary: A concise summary of the candidate's experience, skills, and qualifications.
+            9. **maritalStatus**: The candidate's marital status (if mentioned).
 
-        ```{text}```
-        Ensure the JSON output is correctly formatted, ignoring newline characters and following the field requirements strictly.
-        """
+            10. **currentCountry**: The country where the candidate currently resides.
+
+            11. **currentCity**: The city where the candidate currently resides.
+
+            12. **willingToRelocate**: `true` if the candidate explicitly states willingness to relocate, otherwise `false`.
+
+            13. **relocationPreferences**: A list of preferred relocation locations if mentioned.
+
+            14. **summary**: A concise summary of the candidate’s qualifications, skills, and experience.
+
+            15. **experience**: Number of years the candidate has been working. Strictly in numeric data type
+                - Please check candidate latest and earliest working year
+                - Example : 2019 is earliest and present/now is the earliest
+                - Please check current year
+                - experience = current year - 2019
+                - return data in numeric/integer type
+
+            16. **skills**: List of technical, professional, and language skills.
+                - Do not include hobbies unless explicitly mentioned as skills.
+
+            17. **education**: A list of educational qualifications with these details:
+                - **institution**: Name of the institution.
+                - **level**: Level of education (e.g., Bachelor's, Master's, PhD).
+                - **degree**: Full degree title.
+                - **field**: Extracted field from the degree.
+                - **cgpa**: Cumulative Grade Point Average (if provided).
+                - **start_year**: Start year of the program.
+                - **graduation_year**: Graduation or expected graduation year.
+
+            18. **experiences**: A list of past jobs, each with:
+                - **company**: Name of the employer.
+                - **position**: Job title.
+                - **startDate**: Start date in `YYYY-MM-DD` format.
+                - **endDate**: End date in `YYYY-MM-DD` format (or `null` if still employed).
+                - **responsibilities**: List of key responsibilities.
+
+            19. **certifications**: A list of certifications with:
+                - **name**: Certification title.
+                - **issuedBy**: Issuing organization.
+                - **year**: Year obtained.
+
+            20. **jobTitle**: The candidate’s desired job title.
+
+            21. **jobPosition**: The job position level (e.g., Junior, Senior).
+
+            22. **department**: The department the candidate works in (if mentioned).
+
+            23. **employmentType**: Type of employment (`fullTime`, `partTime`, `contract`, etc.).
+
+            24. **contractDuration**: The length of the employment contract (if applicable).
+
+            25. **employmentRemarks**: Any additional employment-related remarks.
+
+            26. **salary**: Expected or current salary in numeric format.
+
+            ---
+
+            ### **📌 Additional Rules**
+            - **Do not hallucinate data**: If a value is missing, set it as `null` rather than guessing.
+            - **Ensure correct JSON formatting**.
+            - **Ignore newlines (`\n`) in the text**.
+            - **Validate extracted data**:
+            - Emails must match a valid email format.
+            - Phone numbers should contain only numbers and valid symbols (`+`, `-`, `()`, `.`).
+            - Dates should be in `YYYY-MM-DD` format.
+            - If `firstName`, `lastName`, `email`, or `phone` is uncertain, return `null`.
+
+            ```{text}```
+
+            Please ensure the JSON output is correctly formatted and follows these rules strictly.
+            """
+
 
         prompt_template = PromptTemplate(template=prompt, input_variables=["text"])
         output_parser = JsonOutputParser()
@@ -155,20 +226,7 @@ async def summarize_resume(file: UploadFile = File(...)):
         if not isinstance(response, dict):
             raise ValueError("Invalid response format from Gemini")
 
-        # Flattening contact details for frontend compatibility
-        formatted_response = {
-            "full_name": response.get("name"),
-            "address": response.get("address"),
-            "phone": response.get("contact_details", {}).get("phone"),
-            "email": response.get("contact_details", {}).get("email"),
-            "linkedin": response.get("contact_details", {}).get("socials", {}).get("LinkedIn"),
-            "github": response.get("contact_details", {}).get("socials", {}).get("GitHub"),
-            "skills": response.get("skills", []),
-            "education": response.get("education", []),
-            "professional_summary": response.get("professional_summary"),
-        }
-
-        return formatted_response
+        return response  # Directly return as a dictionary
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing resume: {str(e)}")
