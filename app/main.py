@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .database import engine
 from . import models
-from .routers import department, skill, talent, project, user, gemini, pdf_storage, rag, pdf_loader, pdf_loader_omar, chat, projectassignments, talentskill, certification
+from .routers import department, skill, talent, project, user, gemini, pdf_storage, rag, pdf_loader, pdf_loader_omar, chat, projectassignments, talentskill, certification, profileCard
 
 # Initialize DB tables
 models.Base.metadata.create_all(bind=engine)
