@@ -20,8 +20,8 @@ def get_project(project_id: int, db: Session = Depends(get_db)):
 
 @router.post("/", response_model=ProjectResponse)
 def create_project(project: ProjectBase, db: Session = Depends(get_db)):
-    if db.query(Project).filter(Project.name == project.name).first():
-        raise HTTPException(status_code=400, detail="Project already exists")
+    # if db.query(Project).filter(Project.name == project.name).first():
+    #     raise HTTPException(status_code=400, detail="Project already exists")
     
     new_project = Project(**project.dict())
     db.add(new_project)
