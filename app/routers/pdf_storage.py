@@ -51,8 +51,36 @@ async def upload_pdf(file: UploadFile = File(...)):
         return {"file_id": uploaded_file.get('id')}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to upload file: {str(e)}")
-
+    
 @router.get("/")
+async def get_files(
+    page_size: int = Query(100, description="Number of files to retrieve (1-100)"),
+    page_token: str = Query(None, description="Page token for pagination")
+):
+    """Endpoint to retrieve a list of files from Google Drive."""
+    try:
+        # Authenticate with Google Drive
+        creds = authenticate()
+        service = build('drive', 'v3', credentials=creds)
+
+        # Retrieve files from Google Drive
+        results = service.files().list(
+            pageSize=page_size,  # Number of files to retrieve (1-100)
+            fields="nextPageToken, files(id, name, mimeType, createdTime)",  # Fields to include in the response
+            pageToken=page_token  # Pagination token (optional)
+        ).execute()
+
+        # Extract the list of files
+        files = results.get("files", [])
+
+        return {
+            "files": files,
+            "next_page_token": results.get("nextPageToken")  # Include the next page token for pagination
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve files: {str(e)}")
+
+@router.get("/file_id/")
 async def get_file(file_id: str = Query(..., description="The Google Drive file ID")):
     """Endpoint to retrieve file metadata from Google Drive."""
     try:
