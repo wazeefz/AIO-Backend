@@ -34,6 +34,7 @@ app.include_router(pdf_loader_omar.router)
 app.include_router(chat.router)
 app.include_router(projectassignments.router)
 app.include_router(talentskill.router)
+app.include_router(profileCard.router)
 
 @app.get("/")
 def home():
