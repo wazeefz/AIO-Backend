@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, ForeignKey
 from sqlalchemy.orm import relationship
 from .base import Base
+from sqlalchemy.dialects.postgresql import ARRAY
 
 class Talent(Base):
     __tablename__ = "talents"
@@ -32,6 +33,8 @@ class Talent(Base):
     tech_skill = Column(Integer, nullable=False, default=0)
     soft_skill = Column(Integer, nullable=False, default=0)
     interview_remarks = Column(String)
+    relocation_locations =  Column(ARRAY(String), nullable=True)  
+    overall_performance = Column(Integer, nullable=False, default=0)
 
     # Relationships
     department = relationship("Department", back_populates="talents")
