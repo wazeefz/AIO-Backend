@@ -1,5 +1,4 @@
 from fastapi import APIRouter, File, UploadFile, HTTPException, Query
-import json
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
@@ -8,23 +7,18 @@ import os
 
 router = APIRouter(prefix="/upload-pdf", tags=["PDF Storage"])
 
-# Read the credentials from the environment variable
-GOOGLE_CREDENTIALS = os.getenv("GOOGLE_CREDENTIALS")
-
-if GOOGLE_CREDENTIALS:
-    creds = service_account.Credentials.from_service_account_info(json.loads(GOOGLE_CREDENTIALS))
-else:
-    raise ValueError("Google credentials not found in environment variables.")
+# Path to your Google Drive API credentials JSON file
+SERVICE_ACCOUNT_FILE = 'service_account.json'
 
 # Scopes required for accessing Google Drive
 SCOPES = ['https://www.googleapis.com/auth/drive']
 
 # ID of the parent folder in Google Drive where the file will be uploaded
-PARENT_FOLDER_ID = "[folder url]"
+PARENT_FOLDER_ID = "1kBeyHjaKLYQLamyzksjufmT4ox-7Ct4l"
 
 def authenticate():
     """Authenticate using the service account credentials."""
-    creds = service_account.Credentials.from_service_account_file(GOOGLE_CREDENTIALS, scopes=SCOPES)
+    creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
     return creds
 
 @router.post("/")
