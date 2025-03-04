@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List
-from datetime import datetime
 from ..database import get_db
 from ..models.talent import Talent
 from ..models.skill import Skill
@@ -37,10 +36,6 @@ def create_talent_skill(talent_skill: schemas.TalentSkillCreate, db: Session = D
     if not 1 <= talent_skill.proficiency_level <= 4:
         raise HTTPException(status_code=400, detail="Proficiency level must be between 1 and 4")
     
-    # Validate years of experience (non-negative)
-    if talent_skill.years_of_experience < 0:
-        raise HTTPException(status_code=400, detail="Years of experience cannot be negative")
-    
     # Create new talent skill
     db_talent_skill = TalentSkill(**talent_skill.model_dump())
     db.add(db_talent_skill)
@@ -62,7 +57,6 @@ def get_talent_skill(talent_id: int, skill_id: int, db: Session = Depends(get_db
 def get_talent_skills(
     talent_id: int, 
     min_proficiency: int = Query(None, ge=1, le=5),
-    min_experience: float = Query(None, ge=0),
     db: Session = Depends(get_db)
 ):
     # Check if talent exists
@@ -76,8 +70,6 @@ def get_talent_skills(
     # Apply filters if provided
     if min_proficiency is not None:
         query = query.filter(TalentSkill.proficiency_level >= min_proficiency)
-    if min_experience is not None:
-        query = query.filter(TalentSkill.years_of_experience >= min_experience)
     
     return query.all()
 
@@ -85,7 +77,6 @@ def get_talent_skills(
 def get_talents_by_skill(
     skill_id: int,
     min_proficiency: int = Query(None, ge=1, le=5),
-    min_experience: float = Query(None, ge=0),
     db: Session = Depends(get_db)
 ):
     # Check if skill exists
@@ -99,8 +90,6 @@ def get_talents_by_skill(
     # Apply filters if provided
     if min_proficiency is not None:
         query = query.filter(TalentSkill.proficiency_level >= min_proficiency)
-    if min_experience is not None:
-        query = query.filter(TalentSkill.years_of_experience >= min_experience)
     
     return query.all()
 
@@ -122,11 +111,6 @@ def update_talent_skill(
     if talent_skill.proficiency_level is not None:
         if not 1 <= talent_skill.proficiency_level <= 5:
             raise HTTPException(status_code=400, detail="Proficiency level must be between 1 and 5")
-    
-    # Validate years of experience if provided
-    if talent_skill.years_of_experience is not None:
-        if talent_skill.years_of_experience < 0:
-            raise HTTPException(status_code=400, detail="Years of experience cannot be negative")
     
     update_data = talent_skill.model_dump(exclude_unset=True)
     for field, value in update_data.items():
