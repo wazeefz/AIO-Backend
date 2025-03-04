@@ -34,8 +34,8 @@ def create_talent_skill(talent_skill: schemas.TalentSkillCreate, db: Session = D
         raise HTTPException(status_code=400, detail="This talent already has this skill")
     
     # Validate proficiency level (assuming 1-5 scale)
-    if not 1 <= talent_skill.proficiency_level <= 5:
-        raise HTTPException(status_code=400, detail="Proficiency level must be between 1 and 5")
+    if not 1 <= talent_skill.proficiency_level <= 4:
+        raise HTTPException(status_code=400, detail="Proficiency level must be between 1 and 4")
     
     # Validate years of experience (non-negative)
     if talent_skill.years_of_experience < 0:
