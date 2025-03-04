@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from ..database import get_db
 from ..models.education import Education
-from ..schemas.education import EducationBase, EducationResponse, EducationUpdate, EducationCreate
+from ..schemas.education import EducationResponse, EducationUpdate, EducationCreate
 
 router = APIRouter(prefix="/education", tags=["education"])
 
