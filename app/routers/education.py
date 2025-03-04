@@ -25,13 +25,20 @@ def get_talent_education(talent_id: int, db: Session = Depends(get_db)):
 
 @router.post("/", response_model=EducationResponse)
 def create_education(education: EducationCreate, db: Session = Depends(get_db)):
+    # Validate dates if both are provided
+    if education.start_date and education.end_date:
+        if education.end_date < education.start_date:
+            raise HTTPException(
+                status_code=400,
+                detail="End date must be after start date"
+            )
+    
     education_data = education.model_dump()
     new_education = Education(**education_data)
     
     db.add(new_education)
     db.commit()
     db.refresh(new_education)
-    
     return new_education
 
 @router.put("/{education_id}", response_model=EducationResponse)
@@ -44,8 +51,20 @@ def update_education(
     if db_education is None:
         raise HTTPException(status_code=404, detail="Education record not found")
 
-    education_data = education.model_dump(exclude_unset=True)
-    for key, value in education_data.items():
+    # Get the current data
+    update_data = education.model_dump(exclude_unset=True)
+    
+    # If updating dates, validate them
+    start_date = update_data.get('start_date', db_education.start_date)
+    end_date = update_data.get('end_date', db_education.end_date)
+    
+    if start_date and end_date and end_date < start_date:
+        raise HTTPException(
+            status_code=400,
+            detail="End date must be after start date"
+        )
+
+    for key, value in update_data.items():
         setattr(db_education, key, value)
 
     db.commit()
