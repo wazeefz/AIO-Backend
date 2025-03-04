@@ -162,10 +162,17 @@ async def summarize_resume(file: UploadFile = File(...)):
 
             16. **skills**: List of technical, professional, and language skills.
                 - Do not include hobbies unless explicitly mentioned as skills.
+                - Skill details will be stored as dictionary:
+                    - Proficiency Level should be based on the years of experience the employee has working if not stated 
+                    - Proficiency Level:
+                        - Beginner: 0-2 years
+                        - Intermediate: 2-5 years
+                        - Advanced: 5-10 years
+                        - Expert: 10+ years
 
             17. **education**: A list of educational qualifications with these details:
                 - **institution**: Name of the institution.
-                - **level**: Level of education (e.g., Bachelor's, Master's, PhD).
+                - **level**: Level of education (e.g., "Bachelor's Degree","Master's Degree",'Ph.D.','Diploma','High School Diploma',"Associate's Degree").
                 - **degree**: Full degree title.
                 - **field**: Extracted field from the degree.
                 - **cgpa**: Cumulative Grade Point Average (if provided).
