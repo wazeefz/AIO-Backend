@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .database import engine
 from . import models
-from .routers import department, skill, talent, project, user, gemini, pdf_storage, rag, pdf_loader, pdf_loader_omar, chat, projectassignments, talentskill, certification, profileCard
+from .routers import department, skill, talent, project, user, gemini, pdf_storage, rag, pdf_loader, pdf_loader_omar, chat, projectassignments, talentskill, certification, profileCard, education
 
 # Initialize DB tables
 models.Base.metadata.create_all(bind=engine)
@@ -24,6 +24,7 @@ app.include_router(department.router)
 app.include_router(skill.router)
 app.include_router(talent.router)
 app.include_router(certification.router)
+app.include_router(education.router)
 app.include_router(project.router)
 app.include_router(user.router)
 app.include_router(gemini.router)
