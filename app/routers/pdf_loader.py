@@ -15,7 +15,7 @@ from googleapiclient.http import MediaIoBaseDownload
 router = APIRouter(prefix="/pdf", tags=["PDF Processing"])
 
 # Google Drive folder ID
-FOLDER_ID = "1bXUM5xHY5jJ4aGC6n9YjnC9uhPdzPBuE"
+FOLDER_ID = "1kBeyHjaKLYQLamyzksjufmT4ox-7Ct4l"
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
@@ -54,7 +54,7 @@ def get_google_drive_service():
     """Get Google Drive service using service account."""
     try:
         credentials = service_account.Credentials.from_service_account_file(
-            'credentials.json',
+            'service_account.json',
             scopes=SCOPES
         )
         
