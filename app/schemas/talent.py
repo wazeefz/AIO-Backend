@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from typing import Optional
 from datetime import datetime
 
@@ -19,6 +19,7 @@ class TalentBase(BaseModel):
     total_experience_years: Optional[float] = None
     career_preferences: Optional[str] = None
     availability_status: Optional[str] = None
+    file_name: Optional[str] = None
 
     # Added new fields
     age: int
@@ -30,6 +31,12 @@ class TalentBase(BaseModel):
     tech_skill: int
     soft_skill: int
     interview_remarks: Optional[str] = None
+
+    @validator('hire_date', 'date_of_birth', pre=True)
+    def validate_dates(cls, value):
+        if value == "" or value is None:
+            return None
+        return value
 
 # Response Schema - Includes ID (read-only)
 class TalentResponse(TalentBase):
@@ -54,6 +61,7 @@ class TalentUpdate(BaseModel):
     total_experience_years: Optional[float] = None
     career_preferences: Optional[str] = None
     availability_status: Optional[str] = None
+    file_name: Optional[str] = None
 
     # Added new fields
     age: Optional[int] = None
@@ -65,6 +73,12 @@ class TalentUpdate(BaseModel):
     tech_skill: Optional[int] = None
     soft_skill: Optional[int] = None
     interview_remarks: Optional[str] = None
+
+    @validator('hire_date', 'date_of_birth', pre=True)
+    def validate_dates(cls, value):
+        if value == "" or value is None:
+            return None
+        return value
 
     class Config:
         from_attributes = True  # Ensures compatibility with ORM models

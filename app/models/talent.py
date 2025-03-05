@@ -21,6 +21,7 @@ class Talent(Base):
     total_experience_years = Column(Float)
     career_preferences = Column(String)
     availability_status = Column(String)
+    file_name = Column(String)
 
      # Added new fields
     age = Column(Integer, nullable=False)
@@ -50,6 +51,7 @@ class Talent(Base):
             "first_name": self.first_name,
             "last_name": self.last_name,
             "department_id": self.department_id,
+            "file_name": self.file_name,
 
             # Add more fields as needed
             "age": self.age,

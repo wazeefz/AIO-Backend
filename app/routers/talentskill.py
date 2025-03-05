@@ -109,8 +109,8 @@ def update_talent_skill(
     
     # Validate proficiency level if provided
     if talent_skill.proficiency_level is not None:
-        if not 1 <= talent_skill.proficiency_level <= 5:
-            raise HTTPException(status_code=400, detail="Proficiency level must be between 1 and 5")
+        if not 1 <= talent_skill.proficiency_level <= 4:
+            raise HTTPException(status_code=400, detail="Proficiency level must be between 1 and 4")
     
     update_data = talent_skill.model_dump(exclude_unset=True)
     for field, value in update_data.items():

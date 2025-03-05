@@ -163,12 +163,18 @@ async def summarize_resume(file: UploadFile = File(...)):
             16. **skills**: List of technical, professional, and language skills.
                 - Do not include hobbies unless explicitly mentioned as skills.
                 - Skill details will be stored as dictionary:
-                    - Proficiency Level should be based on the years of experience the employee has working if not stated 
-                    - Proficiency Level:
+                    - name: name of the skill
+                    - proficiencyLevel: based on the years of experience the employee has working if not stated 
+                    - proficiencyLevel must follow this format:
                         - Beginner: 0-2 years
                         - Intermediate: 2-5 years
                         - Advanced: 5-10 years
                         - Expert: 10+ years
+                    - category: category of the skill
+                        - Technical: Programming languages, frameworks, databases, etc.
+                        - Professional: Soft skills, project management, etc.
+                        - Language: Languages spoken, written, and read.
+                        - Domain Knowledge: Skills acquired through experieence in a specific domain.
 
             17. **education**: A list of educational qualifications with these details:
                 - **institution**: Name of the institution.
