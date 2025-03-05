@@ -237,18 +237,18 @@
 
 from fastapi import APIRouter, HTTPException
 import os
+import re
 import json
 from typing import List, Dict
 from PyPDF2 import PdfReader
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
+import google.generativeai as genai
 from pymongo import MongoClient, ASCENDING, TEXT
 import certifi
 from pydantic import BaseModel
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from io import BytesIO
-import psycopg2
-from psycopg2 import sql
 
 router = APIRouter(prefix="/pdf-omar", tags=["PDF Omar Processing"])
 
@@ -257,6 +257,9 @@ FOLDER_ID = "1kBeyHjaKLYQLamyzksjufmT4ox-7Ct4l"
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
+
+# Configure Gemini API
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 # Initialize MongoDB client and embeddings
 try:
@@ -273,12 +276,12 @@ try:
     # Setup MongoDB collections
     db = client["capybara_db"]
     collection = db["resumes_db"]
-
+    talents_collection = db["talents"]  # Collection to store unique talent names and IDs
     
     # Ensure indexes exist
     collection.create_index([("text", TEXT)])
     collection.create_index([("metadata.file_name", ASCENDING)])
-
+    talents_collection.create_index([("talent_name", ASCENDING)], unique=True)  # Ensure talent names are unique
     
 except Exception as e:
     print(f"Initialization error: {e}")
@@ -319,50 +322,64 @@ def split_text_into_chunks(text: str, chunk_size: int = 500) -> List[str]:
         chunks.append(text[i:i + chunk_size])
     return chunks
 
-def extract_talent_name(filename: str) -> str:
+def extract_talent_name_with_gemini(text: str) -> str:
     """
-    Extract the talent's first name from the PDF filename.
-    Assumes the filename format is "Firstname_Lastname_Resume.pdf".
-    """
-    return filename.split("_")[0]
-
-def get_or_create_talent_id(file_name: str) -> int:
-    """
-    Fetch or create a talent_id from PostgreSQL.
+    Extract the talent's name using Gemini API.
     Args:
-        file_name (str): The PDF file name.
+        text (str): Extracted text from the PDF.
     Returns:
-        int: talent_id from PostgreSQL.
+        str: Extracted and normalized talent name.
     """
-    conn = psycopg2.connect(
-        dbname=os.getenv("DB_NAME"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        host=os.getenv("DB_HOST")
+    # Initialize Gemini model
+    model = genai.GenerativeModel("gemini-pro")
+    
+    # Prompt Gemini to extract the talent's name
+    prompt = (
+        "Extract the full name of the person from the following resume text. "
+        "Return only the full name in the format 'First Name Last Name'. "
+        "If the name cannot be determined, return 'Unknown'.\n\n"
+        f"Resume Text:\n{text}"
     )
-    cursor = conn.cursor()
+    
+    try:
+        response = model.generate_content(prompt)
+        talent_name = response.text.strip()
+        
+        # Normalize the talent name
+        talent_name = re.sub(r"[^a-zA-Z0-9\s]", "", talent_name).lower()
+        return talent_name
+    except Exception as e:
+        print(f"Error extracting name with Gemini: {str(e)}")
+        return "unknown"
 
-    # Check if the talent exists
-    cursor.execute(
-        sql.SQL("SELECT talent_id FROM talents WHERE file_name = %s"),
-        (file_name,)
-    )
-    result = cursor.fetchone()
-
-    if result:
-        talent_id = result[0]
+def get_or_create_talent_id(talent_name: str) -> int:
+    """
+    Get or create a unique talent_id for the given talent name.
+    Args:
+        talent_name (str): The talent's name.
+    Returns:
+        int: Unique talent_id.
+    """
+    # Normalize the talent name
+    talent_name = re.sub(r"[^a-zA-Z0-9\s]", "", talent_name).lower()
+    
+    # Check if the talent name already exists
+    talent = talents_collection.find_one({"talent_name": talent_name})
+    
+    if talent:
+        return talent["talent_id"]
     else:
-        # Insert new talent
-        cursor.execute(
-            sql.SQL("INSERT INTO talents (file_name) VALUES (%s) RETURNING talent_id"),
-            (file_name,)
-        )
-        talent_id = cursor.fetchone()[0]
-        conn.commit()
-
-    cursor.close()
-    conn.close()
-    return talent_id
+        # Generate a new talent_id (auto-increment)
+        last_talent = talents_collection.find_one(sort=[("talent_id", -1)])
+        new_talent_id = 1 if not last_talent else last_talent["talent_id"] + 1
+        
+        # Insert the new talent into the collection
+        talents_collection.insert_one({
+            "talent_id": new_talent_id,
+            "talent_name": talent_name
+        })
+        
+        return new_talent_id
 
 def extract_pdf_content(pdf_bytes: bytes, filename: str, chunk_size: int = 500) -> Dict:
     """
@@ -376,14 +393,21 @@ def extract_pdf_content(pdf_bytes: bytes, filename: str, chunk_size: int = 500) 
     """
     try:
         pdf = PdfReader(BytesIO(pdf_bytes))
-        talent_id = get_or_create_talent_id(filename)  # Fetch or create talent_id from PostgreSQL
+        text = ""
+        for page in pdf.pages:
+            text += page.extract_text()
 
+        # Extract talent name using Gemini API
+        talent_name = extract_talent_name_with_gemini(text)
+        talent_id = get_or_create_talent_id(talent_name)
+        
         metadata = {
             "metadata_id": 1,  # You can generate a unique ID here
             "file_name": filename,
             "total_pages": len(pdf.pages),
             "source": "resume",
-            "talent_id": talent_id  # Add talent_id from PostgreSQL
+            "talent_id": talent_id,  # Add talent_id to metadata
+            "talent_name": talent_name  # Add talent_name to metadata
         }
         content = []
         chunk_counter = 1  # To track chunk numbers across pages
@@ -457,6 +481,13 @@ async def process_cv_folder():
                 print(f"Processing {filename}...")
                 
                 try:
+                    # Check if the file has already been processed
+                    existing_doc = collection.find_one({"metadata.file_name": filename})
+                    if existing_doc:
+                        print(f"File {filename} already processed. Skipping...")
+                        successful_files.append(filename)
+                        continue
+                    
                     # Download the PDF file
                     request = drive_service.files().get_media(fileId=file_id)
                     pdf_bytes = request.execute()
