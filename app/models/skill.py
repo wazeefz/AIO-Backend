@@ -7,7 +7,7 @@ class Skill(Base):
 
     skill_id = Column(Integer, primary_key=True, index=True)
     skill_name = Column(String, unique=True)
-    skill_category = Column(String)
+    # skill_category = Column(String)
 
     # Relationships
     talent_skills = relationship("TalentSkill", back_populates="skill", cascade="all, delete-orphan")

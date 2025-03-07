@@ -9,7 +9,7 @@ class Certification(Base):
     talent_id = Column(Integer, ForeignKey("talents.talent_id", ondelete="CASCADE"))
     certification_name = Column(String(100), nullable=False)
     issuing_organization = Column(String(100), nullable=False)
-    credential_id = Column(Integer)
+    credential_id = Column(String(20))
     start_date = Column(DateTime, nullable=False)
     has_expiration_date = Column(Boolean, default=False)
     expiration_date = Column(DateTime)

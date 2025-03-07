@@ -6,7 +6,7 @@ class CertificationBase(BaseModel):
     talent_id: int
     certification_name: str
     issuing_organization: str
-    credential_id: Optional[int] = None
+    credential_id: Optional[str] = None
     start_date: datetime
     has_expiration_date: Optional[bool] = False
     expiration_date: Optional[datetime] = None
@@ -17,7 +17,7 @@ class CertificationCreate(CertificationBase):
 class CertificationUpdate(BaseModel):
     certification_name: Optional[str] = None
     issuing_organization: Optional[str] = None
-    credential_id: Optional[int] = None
+    credential_id: Optional[str] = None
     start_date: Optional[datetime] = None
     has_expiration_date: Optional[bool] = None
     expiration_date: Optional[datetime] = None

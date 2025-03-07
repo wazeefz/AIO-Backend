@@ -352,10 +352,38 @@ def get_or_create_talent_id(file_name: str) -> int:
     if result:
         talent_id = result[0]
     else:
-        # Insert new talent
+        # Insert new talent with default values for required fields
         cursor.execute(
-            sql.SQL("INSERT INTO talents (file_name) VALUES (%s) RETURNING talent_id"),
-            (file_name,)
+            sql.SQL("""
+                INSERT INTO talents 
+                (
+                    file_name, first_name, last_name, email, employment_type, 
+                    basic_salary, date_of_birth, marital_status, total_experience_years, 
+                    availability_status, age, current_country, current_city, 
+                    willing_to_relocate, position_level, tech_skill, soft_skill
+                ) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) 
+                RETURNING talent_id
+            """),
+            (
+                file_name,  # file_name
+                "Unknown",  # first_name (default value)
+                "Unknown",  # last_name (default value)
+                "unknown@example.com",  # email (default value)
+                "Full-time",  # employment_type (default value)
+                0.00,  # basic_salary (default value)
+                "2000-01-01",  # date_of_birth (default value)
+                False,  # marital_status (default value)
+                0.00,  # total_experience_years (default value)
+                "Available",  # availability_status (default value)
+                0,  # age (default value)
+                "Unknown",  # current_country (default value)
+                "Unknown",  # current_city (default value)
+                False,  # willing_to_relocate (default value)
+                "Unknown",  # position_level (default value)
+                0,  # tech_skill (default value)
+                0,  # soft_skill (default value)
+            )
         )
         talent_id = cursor.fetchone()[0]
         conn.commit()
