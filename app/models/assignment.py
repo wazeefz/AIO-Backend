@@ -11,7 +11,9 @@ class ProjectAssignment(Base):
     role = Column(String)
     assignment_start_date = Column(DateTime)
     assignment_end_date = Column(DateTime)
-    performance_rating = Column(Integer)
+    tech_skill = Column(Integer)
+    quality = Column(Integer)
+    collaboration = Column(Integer)
 
     # Relationships
     project = relationship("Project", back_populates="project_assignments")

@@ -11,6 +11,9 @@ class ProjectAssignmentBase(BaseModel):
     assignment_start_date: Optional[datetime] = None
     assignment_end_date: Optional[datetime] = None
     performance_rating: Optional[float] = None
+    tech_skill: Optional[int] = None
+    quality: Optional[int] = None
+    collaboration: Optional[int] = None
 
 # Create Schema - Used for creating new assignments
 class ProjectAssignmentCreate(ProjectAssignmentBase):

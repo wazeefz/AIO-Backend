@@ -25,7 +25,7 @@ class ProjectTeamMemberResponse(BaseModel):
     role: Optional[str]
     email: str
     department_name: Optional[str] = None
-    performance_rating: Optional[float]
+    # performance_rating: Optional[float]
     assignment_start_date: Optional[datetime]
     assignment_end_date: Optional[datetime]
     total_experience_years: Optional[float] = None

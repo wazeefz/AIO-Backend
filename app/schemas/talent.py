@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
+from typing import List
 
 # Base Schema - Shared attributes
 class TalentBase(BaseModel):
@@ -30,6 +31,8 @@ class TalentBase(BaseModel):
     tech_skill: int
     soft_skill: int
     interview_remarks: Optional[str] = None
+    relocation_locations: Optional[List[str]] = None
+    overall_performance: Optional[int] = None
 
 # Response Schema - Includes ID (read-only)
 class TalentResponse(TalentBase):
@@ -65,6 +68,10 @@ class TalentUpdate(BaseModel):
     tech_skill: Optional[int] = None
     soft_skill: Optional[int] = None
     interview_remarks: Optional[str] = None
+    relocation_locations: Optional[str] = None
+    overall_performance: Optional[int] = None
+    file_name: Optional[str] = None
+
 
     class Config:
         from_attributes = True  # Ensures compatibility with ORM models

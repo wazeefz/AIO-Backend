@@ -26,7 +26,7 @@ def get_project_team(project_id: int, db: Session = Depends(get_db)):
             Talent,
             Department.department_name.label('department_name'),
             ProjectAssignment.role,
-            ProjectAssignment.performance_rating,
+           
             ProjectAssignment.assignment_start_date,
             ProjectAssignment.assignment_end_date
         )
@@ -38,7 +38,7 @@ def get_project_team(project_id: int, db: Session = Depends(get_db)):
     
     # Transform the results to match the response schema
     result = []
-    for (talent, department_name, role, performance_rating, 
+    for (talent, department_name, role, 
          assignment_start_date, assignment_end_date) in team_members:
         
         # Get skills for this talent
@@ -59,7 +59,6 @@ def get_project_team(project_id: int, db: Session = Depends(get_db)):
             "job_title": talent.job_title,
             "department_name": department_name,
             "role": role,
-            "performance_rating": performance_rating,
             "assignment_start_date": assignment_start_date,
             "assignment_end_date": assignment_end_date,
             "total_experience_years": talent.total_experience_years,
