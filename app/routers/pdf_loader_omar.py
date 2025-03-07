@@ -235,7 +235,7 @@
 #     except Exception as e:
 #         raise HTTPException(status_code=500, detail=str(e))
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 import os
 import json
 from typing import List, Dict
@@ -244,16 +244,14 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from pymongo import MongoClient, ASCENDING, TEXT
 import certifi
 from pydantic import BaseModel
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-from io import BytesIO
-import psycopg2
-from psycopg2 import sql
+from sqlalchemy.orm import Session
+from ..database import get_db
+from ..models import Talent 
 
 router = APIRouter(prefix="/pdf-omar", tags=["PDF Omar Processing"])
 
 # Google Drive folder ID
-FOLDER_ID = "1kBeyHjaKLYQLamyzksjufmT4ox-7Ct4l"
+FOLDER_ID = "1bXUM5xHY5jJ4aGC6n9YjnC9uhPdzPBuE"
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
@@ -273,12 +271,10 @@ try:
     # Setup MongoDB collections
     db = client["capybara_db"]
     collection = db["resumes_db"]
-
     
     # Ensure indexes exist
     collection.create_index([("text", TEXT)])
     collection.create_index([("metadata.file_name", ASCENDING)])
-
     
 except Exception as e:
     print(f"Initialization error: {e}")
@@ -294,7 +290,7 @@ def get_google_drive_service():
     """Get Google Drive service using service account."""
     try:
         credentials = service_account.Credentials.from_service_account_file(
-            'service_account.json',
+            'credentials.json',
             scopes=SCOPES
         )
         
@@ -319,137 +315,81 @@ def split_text_into_chunks(text: str, chunk_size: int = 500) -> List[str]:
         chunks.append(text[i:i + chunk_size])
     return chunks
 
-def extract_talent_name(filename: str) -> str:
-    """
-    Extract the talent's first name from the PDF filename.
-    Assumes the filename format is "Firstname_Lastname_Resume.pdf".
-    """
-    return filename.split("_")[0]
-
-def get_or_create_talent_id(file_name: str) -> int:
-    """
-    Fetch or create a talent_id from PostgreSQL.
-    Args:
-        file_name (str): The PDF file name.
-    Returns:
-        int: talent_id from PostgreSQL.
-    """
-    conn = psycopg2.connect(
-        dbname=os.getenv("DB_NAME"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        host=os.getenv("DB_HOST")
-    )
-    cursor = conn.cursor()
-
-    # Check if the talent exists
-    cursor.execute(
-        sql.SQL("SELECT talent_id FROM talents WHERE file_name = %s"),
-        (file_name,)
-    )
-    result = cursor.fetchone()
-
-    if result:
-        talent_id = result[0]
-    else:
-        # Insert new talent with default values for required fields
-        cursor.execute(
-            sql.SQL("""
-                INSERT INTO talents 
-                (
-                    file_name, first_name, last_name, email, employment_type, 
-                    basic_salary, date_of_birth, marital_status, total_experience_years, 
-                    availability_status, age, current_country, current_city, 
-                    willing_to_relocate, position_level, tech_skill, soft_skill
-                ) 
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) 
-                RETURNING talent_id
-            """),
-            (
-                file_name,  # file_name
-                "Unknown",  # first_name (default value)
-                "Unknown",  # last_name (default value)
-                "unknown@example.com",  # email (default value)
-                "Full-time",  # employment_type (default value)
-                0.00,  # basic_salary (default value)
-                "2000-01-01",  # date_of_birth (default value)
-                False,  # marital_status (default value)
-                0.00,  # total_experience_years (default value)
-                "Available",  # availability_status (default value)
-                0,  # age (default value)
-                "Unknown",  # current_country (default value)
-                "Unknown",  # current_city (default value)
-                False,  # willing_to_relocate (default value)
-                "Unknown",  # position_level (default value)
-                0,  # tech_skill (default value)
-                0,  # soft_skill (default value)
-            )
-        )
-        talent_id = cursor.fetchone()[0]
-        conn.commit()
-
-    cursor.close()
-    conn.close()
-    return talent_id
-
-def extract_pdf_content(pdf_bytes: bytes, filename: str, chunk_size: int = 500) -> Dict:
+def extract_pdf_content(pdf_path: str, talent_id: int, chunk_size: int = 500) -> Dict:
     """
     Extract text and metadata from PDF, split text into chunks, and structure the output.
     Args:
-        pdf_bytes (bytes): PDF file content as bytes.
-        filename (str): Name of the PDF file.
+        pdf_path (str): Path to the PDF file.
+        talent_id (int): The ID of the talent associated with the PDF.
         chunk_size (int): Maximum number of characters per chunk.
     Returns:
         Dict: Structured metadata and content.
     """
     try:
-        pdf = PdfReader(BytesIO(pdf_bytes))
-        talent_id = get_or_create_talent_id(filename)  # Fetch or create talent_id from PostgreSQL
+        with open(pdf_path, 'rb') as file:
+            pdf = PdfReader(file)
+            metadata = {
+                "metadata_id": 1,  # You can generate a unique ID here
+                "file_name": os.path.basename(pdf_path),
+                "total_pages": len(pdf.pages),
+                "source": "resume",
+                "talent_id": talent_id,  # Add talent_id to metadata
+            }
+            content = []
+            chunk_counter = 1  # To track chunk numbers across pages
 
-        metadata = {
-            "metadata_id": 1,  # You can generate a unique ID here
-            "file_name": filename,
-            "total_pages": len(pdf.pages),
-            "source": "resume",
-            "talent_id": talent_id  # Add talent_id from PostgreSQL
-        }
-        content = []
-        chunk_counter = 1  # To track chunk numbers across pages
+            for page_num in range(len(pdf.pages)):
+                page = pdf.pages[page_num]
+                text = page.extract_text()
 
-        for page_num in range(len(pdf.pages)):
-            page = pdf.pages[page_num]
-            text = page.extract_text()
+                if text.strip():
+                    # Split the page text into smaller chunks
+                    chunks = split_text_into_chunks(text, chunk_size)
 
-            if text.strip():
-                # Split the page text into smaller chunks
-                chunks = split_text_into_chunks(text, chunk_size)
+                    for chunk_text in chunks:
+                        content.append({
+                            "page_num": page_num + 1,  # Page numbers start from 1
+                            "chunk_number": chunk_counter,
+                            "chunk_text": chunk_text
+                        })
+                        chunk_counter += 1  # Increment chunk counter
 
-                for chunk_text in chunks:
-                    content.append({
-                        "page_num": page_num + 1,  # Page numbers start from 1
-                        "chunk_number": chunk_counter,
-                        "chunk_text": chunk_text
-                    })
-                    chunk_counter += 1  # Increment chunk counter
+            # Structure the result
+            result = {
+                "metadata": metadata,
+                "content": content
+            }
 
-        # Structure the result
-        result = {
-            "metadata": metadata,
-            "content": content
-        }
-
-        # Print the extracted content in JSON format
-        print("Extracted PDF Content (JSON Format):")
-        print(json.dumps(result, indent=4))  # Pretty-print JSON
-        return result
+            # Print the extracted content in JSON format
+            print("Extracted PDF Content (JSON Format):")
+            print(json.dumps(result, indent=4))  # Pretty-print JSON
+            return result
 
     except Exception as e:
-        print(f"Error processing {filename}: {str(e)}")
+        print(f"Error processing {pdf_path}: {str(e)}")
         return {}
 
+def get_talent_id_by_filename(db: Session, filename: str) -> int:
+    """
+    Query the database to get the talent_id associated with the filename.
+    """
+    talent = db.query(Talent).filter(Talent.file_name == filename).first()
+    if talent:
+        return talent.talent_id
+    else:
+        raise ValueError(f"No talent found with filename: {filename}")
+
 @router.post("/process-cv-folder", response_model=ProcessingResponse)
-async def process_cv_folder():
-    """Process all PDFs in the Google Drive folder."""
+async def process_cv_folder(db: Session = Depends(get_db)):
+    """Process all PDFs in the cv folder."""
+    cv_folder = "app/cv"  # Folder at same level as main.py
+    
+    if not os.path.exists(cv_folder):
+        raise HTTPException(
+            status_code=404,
+            detail=f"CV folder '{cv_folder}' not found!"
+        )
+    
     successful_files = []
     failed_files = []
     total_pages = 0
@@ -459,38 +399,18 @@ async def process_cv_folder():
         # Clear existing collection
         collection.delete_many({})
         
-        # Get Google Drive service
-        drive_service = get_google_drive_service()
-        
-        # List files in the Google Drive folder
-        results = drive_service.files().list(
-            q=f"'{FOLDER_ID}' in parents",
-            pageSize=10,
-            fields="nextPageToken, files(id, name)"
-        ).execute()
-        
-        items = results.get('files', [])
-        
-        if not items:
-            raise HTTPException(
-                status_code=404,
-                detail="No files found in the specified Google Drive folder."
-            )
-        
-        # Process each PDF in the Google Drive folder
-        for item in items:
-            if item['name'].endswith('.pdf'):
-                file_id = item['id']
-                filename = item['name']
+        # Process each PDF in the cv folder
+        for filename in os.listdir(cv_folder):
+            if filename.endswith(".pdf"):
+                pdf_path = os.path.join(cv_folder, filename)
                 print(f"Processing {filename}...")
                 
                 try:
-                    # Download the PDF file
-                    request = drive_service.files().get_media(fileId=file_id)
-                    pdf_bytes = request.execute()
+                    # Query talent_id from the database
+                    talent_id = get_talent_id_by_filename(db, filename)
                     
                     # Extract content from the PDF
-                    result = extract_pdf_content(pdf_bytes, filename)
+                    result = extract_pdf_content(pdf_path, talent_id)
                     
                     if result:  # Check if result is not empty
                         metadata = result["metadata"]
@@ -567,3 +487,4 @@ async def clear_database():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
