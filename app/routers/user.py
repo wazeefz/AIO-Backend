@@ -78,3 +78,11 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid email")
     
     return {"message": "Login successful", "user": db_user}
+
+# Add this endpoint to router/user.py
+@router.get("/get-user-id/", response_model=int)
+def get_user_id(email: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == email).first()
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user.user_id

@@ -7,6 +7,8 @@ from langchain_mongodb import MongoDBAtlasVectorSearch
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_google_genai.embeddings import GoogleGenerativeAIEmbeddings
 from langchain.chains import RetrievalQA
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 from datetime import datetime
 from ..database import get_db
 import certifi
@@ -36,7 +38,7 @@ SYSTEM_PROMPT = """
 
 def find_similar_resumes(query: str, limit: int = 5) -> List[Dict]:
     """Find similar resumes using text search and embedding similarity."""
-    collection = client["capybara_db"]["resumes"]
+    collection = client["capybara_db"]["resumes_db"]
     
     query_embedding = embeddings.embed_query(query)
     
@@ -46,6 +48,22 @@ def find_similar_resumes(query: str, limit: int = 5) -> List[Dict]:
     ).sort([("score", {"$meta": "textScore"})]).limit(limit)
     
     return list(results)
+
+
+# Query Rewriting Logic
+rewrite_template = """Rewrite the following query to better match the content of a resume database. \
+Focus on extracting key skills, roles, and experiences that would be relevant for team assembly. \
+Return only a single query. Query: \
+{x} Answer:"""
+rewrite_prompt = ChatPromptTemplate.from_template(rewrite_template)
+
+def _parse(text):
+    # Extract the first query if multiple are returned
+    if "**" in text:
+        return text.split("**")[0].strip()
+    return text.strip()
+
+rewriter = rewrite_prompt | llm | StrOutputParser() | _parse
 
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
@@ -137,6 +155,105 @@ async def create_message(
 #     except Exception as e:
 #         raise HTTPException(status_code=500, detail=str(e))
 
+# @router.get("/ask-question/")
+# async def ask_question(
+#     question: str = Query(..., description="Your question or project requirements"),
+#     is_team_assembly: bool = Query(True, description="Set to True for team assembly requests")
+# ):
+#     try:
+#         if is_team_assembly:
+#             # Team assembly logic (from assemble-team endpoint)
+#             if not question:
+#                 raise HTTPException(
+#                     status_code=400, 
+#                     detail="Project requirements are required for team assembly"
+#                 )
+            
+#             # Find relevant resumes
+#             relevant_resumes = find_similar_resumes(question)
+            
+#             # Build context for the prompt
+#             context = "\n\nAvailable Candidates:\n"
+#             for resume in relevant_resumes:
+#                 context += f"Candidate from {resume['metadata']['file_name']}:\n{resume['text']}\n\n"
+            
+#             # Create the prompt for the LLM
+#             prompt = f"{SYSTEM_PROMPT}\n\nProject Requirements:\n{question}\n{context}"
+            
+#             # Get the response from the LLM
+#             response = llm.predict(prompt)
+            
+#             # Return the team assembly response
+#             return {
+#                 "type": "team_assembly",
+#                 "project_requirements": question,
+#                 "team_recommendation": response,
+#                 "sources": [
+#                     {
+#                         "file_name": resume["metadata"]["file_name"],
+#                         "page_number": resume.get("page_number", "N/A")  # Use get to avoid KeyError
+#                     }
+#                     for resume in relevant_resumes
+#                 ]
+#             }
+#         else:
+#             # General question logic with RAG
+#             # Step 1: Retrieve relevant documents from MongoDB using vector search
+#             collection = client["capybara_db"]["resumes"]
+            
+#             # Generate embedding for the question
+#             query_embedding = embeddings.embed_query(question)
+            
+#             # Perform vector search
+#             results = collection.aggregate([
+#                 {
+#                     "$vectorSearch": {
+#                         "index": "vector_index",  # Replace with your vector index name
+#                         "path": "embedding_array",  # Field containing the embeddings
+#                         "queryVector": query_embedding,
+#                         "numCandidates": 10,  # Number of candidates to retrieve
+#                         "limit": 5  # Number of results to return
+#                     }
+#                 },
+#                 {
+#                     "$project": {
+#                         "text": 1,
+#                         "metadata": 1,
+#                         "score": { "$meta": "vectorSearchScore" }
+#                     }
+#                 }
+#             ])
+            
+#             # Convert results to a list
+#             relevant_documents = list(results)
+            
+#             # Step 2: Build context for the prompt
+#             context = "\n\nRelevant Documents:\n"
+#             for doc in relevant_documents:
+#                 context += f"Document: {doc['metadata']['file_name']}\n{doc['text']}\n\n"
+            
+#             # Step 3: Create the prompt for the LLM
+#             prompt = f"{SYSTEM_PROMPT}\n\nQuestion:\n{question}\n{context}"
+            
+#             # Step 4: Get the response from the LLM
+#             response = llm.predict(prompt)
+            
+#             # Step 5: Return the response
+#             return {
+#                 "type": "general_question",
+#                 "content": response,
+#                 "sources": [
+#                     {
+#                         "file_name": doc["metadata"]["file_name"],
+#                         "page_number": doc.get("page_number", "N/A")  # Use get to avoid KeyError
+#                     }
+#                     for doc in relevant_documents
+#                 ]
+#             }
+    
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/ask-question/")
 async def ask_question(
     question: str = Query(..., description="Your question or project requirements"),
@@ -151,27 +268,38 @@ async def ask_question(
                     detail="Project requirements are required for team assembly"
                 )
             
-            # Find relevant resumes
-            relevant_resumes = find_similar_resumes(question)
+            # Step 1: Rewrite the query to better match resume content
+            rewritten_query = rewriter.invoke({"x": question})
             
-            # Build context for the prompt
+            # Step 2: Find relevant resumes using the rewritten query
+            relevant_resumes = find_similar_resumes(rewritten_query)
+            
+            if not relevant_resumes:
+                raise HTTPException(
+                    status_code=404,
+                    detail="No relevant resumes found for the rewritten query."
+                )
+            
+            # Step 3: Build context for the prompt
             context = "\n\nAvailable Candidates:\n"
             for resume in relevant_resumes:
                 context += f"Candidate from {resume['metadata']['file_name']}:\n{resume['text']}\n\n"
             
-            # Create the prompt for the LLM
+            # Step 4: Create the prompt for the LLM
             prompt = f"{SYSTEM_PROMPT}\n\nProject Requirements:\n{question}\n{context}"
             
-            # Get the response from the LLM
+            # Step 5: Get the response from the LLM
             response = llm.predict(prompt)
             
-            # Return the team assembly response
+            # Step 6: Return the team assembly response
             return {
                 "type": "team_assembly",
                 "project_requirements": question,
+                "rewritten_query": rewritten_query,  # Include the rewritten query in the response
                 "team_recommendation": response,
                 "sources": [
                     {
+                        "talent_id": resume["metadata"]["talent_id"],
                         "file_name": resume["metadata"]["file_name"],
                         "page_number": resume.get("page_number", "N/A")  # Use get to avoid KeyError
                     }
@@ -180,11 +308,14 @@ async def ask_question(
             }
         else:
             # General question logic with RAG
-            # Step 1: Retrieve relevant documents from MongoDB using vector search
-            collection = client["capybara_db"]["resumes"]
+            # Step 1: Rewrite the query to better match document content
+            rewritten_query = rewriter.invoke({"x": question})
             
-            # Generate embedding for the question
-            query_embedding = embeddings.embed_query(question)
+            # Step 2: Retrieve relevant documents from MongoDB using vector search
+            collection = client["capybara_db"]["resumes_db"]
+            
+            # Generate embedding for the rewritten query
+            query_embedding = embeddings.embed_query(rewritten_query)
             
             # Perform vector search
             results = collection.aggregate([
@@ -209,33 +340,44 @@ async def ask_question(
             # Convert results to a list
             relevant_documents = list(results)
             
-            # Step 2: Build context for the prompt
+            if not relevant_documents:
+                raise HTTPException(
+                    status_code=404,
+                    detail="No relevant documents found for the rewritten query."
+                )
+            
+            # Step 3: Build context for the prompt
             context = "\n\nRelevant Documents:\n"
             for doc in relevant_documents:
                 context += f"Document: {doc['metadata']['file_name']}\n{doc['text']}\n\n"
             
-            # Step 3: Create the prompt for the LLM
+            # Step 4: Create the prompt for the LLM
             prompt = f"{SYSTEM_PROMPT}\n\nQuestion:\n{question}\n{context}"
             
-            # Step 4: Get the response from the LLM
+            # Step 5: Get the response from the LLM
             response = llm.predict(prompt)
             
-            # Step 5: Return the response
+            # Step 6: Return the response
             return {
                 "type": "general_question",
+                "rewritten_query": rewritten_query,  # Include the rewritten query in the response
                 "content": response,
                 "sources": [
                     {
+                        "talent_id": doc["metadata"]["talent_id"],
                         "file_name": doc["metadata"]["file_name"],
                         "page_number": doc.get("page_number", "N/A")  # Use get to avoid KeyError
+        
                     }
                     for doc in relevant_documents
                 ]
             }
     
+    except HTTPException as he:
+        raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
+
 @router.delete("/{user_id}/{chat_id}", )
 async def delete_chat(
     user_id: int,

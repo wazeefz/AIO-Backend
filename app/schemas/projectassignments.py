@@ -10,7 +10,10 @@ class ProjectAssignmentBase(BaseModel):
     role: Optional[str] = None
     assignment_start_date: Optional[datetime] = None
     assignment_end_date: Optional[datetime] = None
-    performance_rating: Optional[float] = None
+    # performance_rating: Optional[float] = None
+    tech_skill: Optional[int] = None
+    quality: Optional[int] = None
+    collaboration: Optional[int] = None
 
 # Create Schema - Used for creating new assignments
 class ProjectAssignmentCreate(ProjectAssignmentBase):
@@ -22,7 +25,10 @@ class ProjectAssignmentUpdate(BaseModel):
     role: Optional[str] = None
     assignment_start_date: Optional[datetime] = None
     assignment_end_date: Optional[datetime] = None
-    performance_rating: Optional[float] = None
+    # performance_rating: Optional[float] = None
+    tech_skill: Optional[int] = None
+    quality: Optional[int] = None
+    collaboration: Optional[int] = None
 
 # Response Schema - Includes ID and relationships
 class ProjectAssignmentResponse(ProjectAssignmentBase):
@@ -69,7 +75,10 @@ class ProjectTeamMemberResponse(BaseModel):
     job_title: str
     role: Optional[str]
     email: str
-    performance_rating: Optional[float]
+    # performance_rating: Optional[float]
+    tech_skill: Optional[int]
+    quality: Optional[int]
+    collaboration: Optional[int]
     assignment_start_date: Optional[datetime]
     assignment_end_date: Optional[datetime]
 

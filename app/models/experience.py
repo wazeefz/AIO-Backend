@@ -13,7 +13,7 @@ class ProfessionalExperience(Base):
     employment_type = Column(String)
     start_date = Column(DateTime)
     end_date = Column(DateTime)
-    is_current_job = Column(Boolean)
+    # is_current_job = Column(Boolean)
     description = Column(String)
     key_achievements = Column(ARRAY(String))
 
