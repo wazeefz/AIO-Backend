@@ -1,55 +1,136 @@
-from fastapi import APIRouter, File, UploadFile, HTTPException
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
+from fastapi import APIRouter, File, UploadFile, HTTPException, Query
+from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
+from io import BytesIO
 import os
-import io
-import logging
-import requests
 
 router = APIRouter(prefix="/upload-pdf", tags=["PDF Storage"])
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Path to your Google Drive API credentials JSON file
+SERVICE_ACCOUNT_FILE = 'service_account.json'
 
-FOLDER_ID = '1bXUM5xHY5jJ4aGC6n9YjnC9uhPdzPBuE'
+# Scopes required for accessing Google Drive
+SCOPES = ['https://www.googleapis.com/auth/drive']
 
-# Endpoint to handle file upload
+# ID of the parent folder in Google Drive where the file will be uploaded
+PARENT_FOLDER_ID = "1kBeyHjaKLYQLamyzksjufmT4ox-7Ct4l"
+
+def authenticate():
+    """Authenticate using the service account credentials."""
+    creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+    return creds
+
 @router.post("/")
 async def upload_pdf(file: UploadFile = File(...)):
+    """Endpoint to upload a PDF file to Google Drive directly."""
     try:
-        # Validate file type
-        if file.content_type not in ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]:
-            raise HTTPException(status_code=400, detail="Invalid file type. Only PDF and DOCX files are allowed.")
+        # Authenticate with Google Drive
+        creds = authenticate()
+        service = build('drive', 'v3', credentials=creds)
 
-        # Read the file content
+        # Define file metadata, including the parent folder ID
+        file_metadata = {
+            'name': file.filename,
+            'parents': [PARENT_FOLDER_ID]
+        }
+
+        # Read the file content into memory
         file_content = await file.read()
 
+        # Use MediaIoBaseUpload to handle the file upload directly from memory
+        media = MediaIoBaseUpload(BytesIO(file_content), mimetype='application/pdf', resumable=True)
+
         # Upload the file to Google Drive
-        upload_url = f"https://www.googleapis.com/upload/drive/v3/files?uploadType=media&supportsAllDrives=true&fields=id"
-        headers = {
-            "Authorization": "Bearer YOUR_ACCESS_TOKEN",  # Replace with a valid access token
-            "Content-Type": file.content_type,
-        }
-        data = {
-            "name": file.filename,
-            "parents": [FOLDER_ID],
-        }
-        response = requests.post(
-            upload_url,
-            headers=headers,
-            data=file_content,
-            json=data,
-        )
+        uploaded_file = service.files().create(
+            body=file_metadata,
+            media_body=media,
+            fields='id'
+        ).execute()
 
-        if response.status_code != 200:
-            raise HTTPException(status_code=response.status_code, detail=response.text)
-
-        # Return the file ID
-        return {"file_id": response.json().get('id'), "file_name": file.filename}
-
+        return {"file_id": uploaded_file.get('id')}
     except Exception as e:
-        logger.error(f"Error in upload_pdf: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Failed to upload file: {str(e)}")
+    
+@router.get("/")
+async def get_files(
+    page_size: int = Query(100, description="Number of files to retrieve (1-100)"),
+    page_token: str = Query(None, description="Page token for pagination")
+):
+    """Endpoint to retrieve a list of files from Google Drive."""
+    try:
+        # Authenticate with Google Drive
+        creds = authenticate()
+        service = build('drive', 'v3', credentials=creds)
+
+        # Retrieve files from Google Drive
+        results = service.files().list(
+            pageSize=page_size,  # Number of files to retrieve (1-100)
+            fields="nextPageToken, files(id, name, mimeType, createdTime)",  # Fields to include in the response
+            pageToken=page_token  # Pagination token (optional)
+        ).execute()
+
+        # Extract the list of files
+        files = results.get("files", [])
+
+        return {
+            "files": files,
+            "next_page_token": results.get("nextPageToken")  # Include the next page token for pagination
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve files: {str(e)}")
+
+@router.get("/file_id/")
+async def get_file(file_id: str = Query(..., description="The Google Drive file ID")):
+    """Endpoint to retrieve file metadata from Google Drive."""
+    try:
+        # Authenticate with Google Drive
+        creds = authenticate()
+        service = build('drive', 'v3', credentials=creds)
+
+        # Get file metadata
+        file_metadata = service.files().get(fileId=file_id, fields="id, name, mimeType, createdTime").execute()
+
+        return file_metadata
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve file: {str(e)}")
+
+@router.put("/")
+async def update_file(file_id: str = Query(..., description="The Google Drive file ID"), file: UploadFile = File(...)):
+    """Endpoint to update a file in Google Drive."""
+    try:
+        # Authenticate with Google Drive
+        creds = authenticate()
+        service = build('drive', 'v3', credentials=creds)
+
+        # Read the new file content into memory
+        file_content = await file.read()
+
+        # Use MediaIoBaseUpload to handle the file upload directly from memory
+        media = MediaIoBaseUpload(BytesIO(file_content), mimetype='application/pdf', resumable=True)
+
+        # Update the file in Google Drive
+        updated_file = service.files().update(
+            fileId=file_id,
+            media_body=media,
+            fields='id'
+        ).execute()
+
+        return {"file_id": updated_file.get('id')}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update file: {str(e)}")
+
+@router.delete("/")
+async def delete_file(file_id: str = Query(..., description="The Google Drive file ID")):
+    """Endpoint to delete a file from Google Drive."""
+    try:
+        # Authenticate with Google Drive
+        creds = authenticate()
+        service = build('drive', 'v3', credentials=creds)
+
+        # Delete the file
+        service.files().delete(fileId=file_id).execute()
+
+        return {"message": f"File with ID {file_id} has been deleted."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete file: {str(e)}")

@@ -147,4 +147,4 @@ def delete_talent_skill(talent_id: int, skill_id: int, db: Session = Depends(get
     
     db.delete(db_talent_skill)
     db.commit()
-    return None
+    return {"message": "Talent skill deleted successfully"}

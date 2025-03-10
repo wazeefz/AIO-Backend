@@ -10,8 +10,8 @@ class Education(Base):
     institution_name = Column(String)
     qualification_type = Column(String)
     field_of_study = Column(String)
-    start_date = Column(DateTime)
-    end_date = Column(DateTime)
+    # start_date = Column(DateTime)
+    # end_date = Column(DateTime)
 
     # Relationships
     talent = relationship("Talent", back_populates="education")

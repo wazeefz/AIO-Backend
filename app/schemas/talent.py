@@ -33,6 +33,7 @@ class TalentBase(BaseModel):
     interview_remarks: Optional[str] = None
     relocation_locations: Optional[List[str]] = None
     overall_performance: Optional[int] = None
+    file_name: Optional[str] = None
 
 # Response Schema - Includes ID (read-only)
 class TalentResponse(TalentBase):

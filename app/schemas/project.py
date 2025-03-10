@@ -15,7 +15,6 @@ class ProjectBase(BaseModel):
     # start_date: Optional[datetime] = None
     # required_skills: Optional[List[int]] = []
     # min_experience_years: Optional[int] = None
-    due_date: Optional[datetime] = None
     team_size: Optional[int] = None
 
     # Added new fields

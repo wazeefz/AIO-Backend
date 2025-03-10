@@ -35,7 +35,7 @@ class Talent(Base):
     interview_remarks = Column(String)
     relocation_locations =  Column(ARRAY(String), nullable=True)  
     overall_performance = Column(Integer, nullable=False, default=0)
-    file_name = Column(String, nullable=True)
+    file_name = Column(String)
 
     # Relationships
     department = relationship("Department", back_populates="talents")
