@@ -4,6 +4,7 @@ from datetime import datetime
 
 class EmployeeInfoResponse(BaseModel):
     talent_id: int
+    phone: str
     first_name: str
     last_name: str
     job_title: str
